@@ -4,10 +4,13 @@ import { calculateGrossWpm, calculateNetWpm } from "../utils/calculateWpm";
 
 const selectTyping = (state: { typing: TypingState }) => state.typing;
 
+const MIN_CHARS_FOR_WPM = 5;
+
 export const selectCurrentWpm = createSelector(
   [selectTyping],
   (typing) => {
     if (!typing.startTime || typing.elapsedTime <= 0) return 0;
+    if (typing.totalTyped < MIN_CHARS_FOR_WPM) return 0;
     const elapsedMinutes = typing.elapsedTime / 60;
     const gross = calculateGrossWpm(typing.totalTyped, elapsedMinutes);
     return calculateNetWpm(gross, typing.errors, elapsedMinutes);

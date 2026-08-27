@@ -23,7 +23,6 @@ export function TypingTest() {
 
   const showDisplay =
     status === "ready" || status === "active" || status === "paused";
-  const isActive = status === "active" || status === "paused";
   const isCompleted = status === "completed";
 
   return (
@@ -35,7 +34,7 @@ export function TypingTest() {
         </p>
       </div>
 
-      {isActive && (
+      {showDisplay && (
         <div className={styles.statsBar}>
           <div className={styles.stat}>
             <span className={styles.statValue}>{currentWpm}</span>

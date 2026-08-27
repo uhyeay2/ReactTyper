@@ -39,13 +39,13 @@
 }
 
 .statValue {
-  font-size: 24px;
+  font-size: 36px;
   font-weight: 700;
   color: var(--text);
 }
 
 .statLabel {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -53,7 +53,7 @@
 
 .timer {
   font-family: "Courier New", Courier, monospace;
-  font-size: 18px;
+  font-size: 36px;
   color: var(--text-muted);
 }
 
