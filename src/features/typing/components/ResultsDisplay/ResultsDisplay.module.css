@@ -1,0 +1,71 @@
+.results {
+  max-width: 720px;
+  width: 100%;
+  padding: 32px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 24px 0;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.metricValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.metricLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+}
+
+.detailLabel {
+  color: var(--text-muted);
+}
+
+.detailValue {
+  color: var(--text);
+  font-weight: 500;
+}
