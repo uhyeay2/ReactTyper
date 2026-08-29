@@ -1,10 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { TypingState, TypingResults, WpmSnapshot } from "./typingTypes";
+import type { Keystroke, WpmTimelinePoint } from "../metrics/wpm";
+import { computeLiveWpm } from "../metrics/wpm";
 import { getTargetText } from "../utils/wordList";
 
 const DEFAULT_WORD_COUNT = 50;
 
-const initialState: TypingState = {
+export const initialState: TypingState = {
   view: "home",
   status: "idle",
   targetText: getTargetText(DEFAULT_WORD_COUNT),
@@ -20,6 +22,9 @@ const initialState: TypingState = {
   fixedChars: "",
   pausedElapsed: 0,
   wpmHistory: [],
+  keystrokes: [],
+  liveWpm: 0,
+  wpmTimeline: [],
 };
 
 const typingSlice = createSlice({
@@ -29,10 +34,7 @@ const typingSlice = createSlice({
     navigateHome() {
       return { ...initialState };
     },
-    startFromHome(
-      state,
-      action: PayloadAction<{ wordCount: number }>,
-    ) {
+    startFromHome(state, action: PayloadAction<{ wordCount: number }>) {
       const wc = action.payload.wordCount;
       state.view = "test";
       state.status = "ready";
@@ -49,6 +51,9 @@ const typingSlice = createSlice({
       state.fixedChars = "";
       state.pausedElapsed = 0;
       state.wpmHistory = [];
+      state.keystrokes = [];
+      state.liveWpm = 0;
+      state.wpmTimeline = [];
     },
     readyTest(state) {
       state.status = "ready";
@@ -88,6 +93,7 @@ const typingSlice = createSlice({
         errors: number;
         totalTyped: number;
         fixedChars: string;
+        keystroke: Keystroke | null;
       }>,
     ) {
       state.typedText = action.payload.typedText;
@@ -96,6 +102,16 @@ const typingSlice = createSlice({
       state.errors = action.payload.errors;
       state.totalTyped = action.payload.totalTyped;
       state.fixedChars = action.payload.fixedChars;
+
+      if (action.payload.keystroke === null) {
+        state.keystrokes.pop();
+      } else {
+        state.keystrokes.push(action.payload.keystroke);
+      }
+      state.liveWpm = computeLiveWpm(state.keystrokes, state.liveWpm);
+    },
+    refreshLiveWpm(state) {
+      state.liveWpm = computeLiveWpm(state.keystrokes, state.liveWpm);
     },
     appendTargetWords(
       state,
@@ -120,10 +136,12 @@ const typingSlice = createSlice({
       state,
       action: PayloadAction<{
         results: TypingResults;
+        wpmTimeline: WpmTimelinePoint[];
       }>,
     ) {
       state.status = "completed";
       state.results = action.payload.results;
+      state.wpmTimeline = action.payload.wpmTimeline;
     },
     resetToReady(state) {
       state.status = "ready";
@@ -138,6 +156,9 @@ const typingSlice = createSlice({
       state.fixedChars = "";
       state.pausedElapsed = 0;
       state.wpmHistory = [];
+      state.keystrokes = [];
+      state.liveWpm = 0;
+      state.wpmTimeline = [];
     },
     refreshTest(state) {
       const wordCount = state.wordCount;
@@ -159,6 +180,7 @@ export const {
   startReadyTest,
   startTest,
   updateTypedText,
+  refreshLiveWpm,
   appendTargetWords,
   setElapsedTime,
   pauseTest,
@@ -169,8 +191,7 @@ export const {
   refreshTest,
 } = typingSlice.actions;
 
-export const selectView = (state: { typing: TypingState }) =>
-  state.typing.view;
+export const selectView = (state: { typing: TypingState }) => state.typing.view;
 export const selectTypingStatus = (state: { typing: TypingState }) =>
   state.typing.status;
 export const selectTargetText = (state: { typing: TypingState }) =>
@@ -197,6 +218,12 @@ export const selectPausedElapsed = (state: { typing: TypingState }) =>
   state.typing.pausedElapsed;
 export const selectWpmHistory = (state: { typing: TypingState }) =>
   state.typing.wpmHistory;
+export const selectLiveWpm = (state: { typing: TypingState }) =>
+  state.typing.liveWpm;
+export const selectWpmTimeline = (state: { typing: TypingState }) =>
+  state.typing.wpmTimeline;
+export const selectKeystrokes = (state: { typing: TypingState }) =>
+  state.typing.keystrokes;
 
 export const selectFinalErrors = (state: { typing: TypingState }) => {
   const { targetText, typedText } = state.typing;

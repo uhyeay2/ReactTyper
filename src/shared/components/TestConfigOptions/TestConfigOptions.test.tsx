@@ -176,7 +176,7 @@ describe("TestConfigOptions", () => {
     store.dispatch({ type: "typingConfig/setWordCount", payload: 25 });
     const user = userEvent.setup();
 
-    await user.click(screen.getAllByText("None")[1]);
+    await user.click(screen.getAllByText("None")[1]!);
 
     expect(store.getState().typingConfig.wordCount).toBeNull();
   });
@@ -186,7 +186,7 @@ describe("TestConfigOptions", () => {
     store.dispatch({ type: "typingConfig/setMaxErrors", payload: 3 });
     const user = userEvent.setup();
 
-    await user.click(screen.getAllByText("None")[2]);
+    await user.click(screen.getAllByText("None")[2]!);
 
     expect(store.getState().typingConfig.maxErrors).toBeNull();
   });
@@ -195,7 +195,7 @@ describe("TestConfigOptions", () => {
     const { store } = renderWithStore();
     const user = userEvent.setup();
 
-    await user.click(screen.getAllByText("None")[0]);
+    await user.click(screen.getAllByText("None")[0]!);
 
     expect(store.getState().typingConfig.duration).toBeNull();
   });

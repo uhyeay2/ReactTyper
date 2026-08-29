@@ -5,6 +5,7 @@ import {
   selectCurrentAccuracy,
   selectFinalErrors,
 } from "../state/typingSelectors";
+import { initialState } from "../state/typingSlice";
 import type { TypingState } from "../state/typingTypes";
 
 describe("computeCharStates", () => {
@@ -41,13 +42,14 @@ describe("computeCharStates", () => {
 });
 
 describe("selectCurrentWpm", () => {
-  const baseTyping = {
+  const baseTyping: TypingState = {
+    ...initialState,
     startTime: 1,
     totalTyped: 0,
     errors: 0,
     wpmHistory: [],
     elapsedTime: 0,
-  } as TypingState;
+  };
 
   it("returns 0 when below minimum chars", () => {
     const state = {
@@ -113,7 +115,12 @@ describe("selectCurrentWpm", () => {
 
   it("returns 0 when start time is not set", () => {
     const state = {
-      typing: { ...baseTyping, startTime: null, elapsedTime: 10, totalTyped: 50 },
+      typing: {
+        ...baseTyping,
+        startTime: null,
+        elapsedTime: 10,
+        totalTyped: 50,
+      },
     } as { typing: TypingState };
     expect(selectCurrentWpm(state)).toBe(0);
   });
@@ -127,10 +134,11 @@ describe("selectCurrentWpm", () => {
 });
 
 describe("selectCurrentAccuracy", () => {
-  const baseTyping = {
+  const baseTyping: TypingState = {
+    ...initialState,
     totalTyped: 0,
     correctChars: 0,
-  } as TypingState;
+  };
 
   it("returns 0 when nothing typed", () => {
     const state = { typing: baseTyping } as { typing: TypingState };
@@ -153,10 +161,11 @@ describe("selectCurrentAccuracy", () => {
 });
 
 describe("selectFinalErrors", () => {
-  const baseTyping = {
+  const baseTyping: TypingState = {
+    ...initialState,
     typedText: "",
     targetText: "",
-  } as TypingState;
+  };
 
   it("returns 0 for no text", () => {
     const state = { typing: baseTyping } as { typing: TypingState };

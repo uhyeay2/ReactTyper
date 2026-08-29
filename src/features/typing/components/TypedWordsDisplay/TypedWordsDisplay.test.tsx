@@ -12,7 +12,8 @@ function renderDisplay(props: {
 
 function getChars(): HTMLElement[] {
   return Array.from(
-    document.querySelector('[aria-label="Typed test text review"]')
+    document
+      .querySelector('[aria-label="Typed test text review"]')
       ?.querySelectorAll("span[data-char-index]") ?? [],
   );
 }
@@ -26,9 +27,7 @@ describe("TypedWordsDisplay", () => {
       fixedChars: "",
     });
 
-    expect(
-      screen.getByLabelText("Typed test text review"),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Typed test text review")).toBeInTheDocument();
     const chars = getChars();
     expect(chars.length).toBe(5);
     chars.forEach((el) => {
@@ -46,8 +45,8 @@ describe("TypedWordsDisplay", () => {
 
     const chars = getChars();
     expect(chars.length).toBe(5);
-    expect(chars[1].textContent).toBe("b");
-    expect(chars[1].className).toContain("incorrect");
+    expect(chars[1]!.textContent).toBe("b");
+    expect(chars[1]!.className).toContain("incorrect");
     expect(
       chars.filter(
         (el) =>
@@ -66,7 +65,7 @@ describe("TypedWordsDisplay", () => {
     });
 
     const chars = getChars();
-    expect(chars[1].className).toContain("fixed");
+    expect(chars[1]!.className).toContain("fixed");
   });
 
   it("does not render characters beyond typed length", () => {
@@ -120,6 +119,66 @@ describe("TypedWordsDisplay", () => {
 
     const chars = getChars();
     expect(chars.length).toBe(5);
-    expect(chars[0].textContent).toBe("h");
+    expect(chars[0]!.textContent).toBe("h");
+  });
+
+  it("renders per-word WPM under each word when word states are provided", () => {
+    render(
+      <TypedWordsDisplay
+        targetText="hello world"
+        typedText="hello world"
+        currentIndex={11}
+        fixedChars=""
+        wordStates={[
+          {
+            wordText: "hello",
+            startCharIndex: 0,
+            endCharIndex: 4,
+            wordWpm: 42,
+          },
+          {
+            wordText: "world",
+            startCharIndex: 6,
+            endCharIndex: 10,
+            wordWpm: 57,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("42 wpm")).toBeInTheDocument();
+    expect(screen.getByText("57 wpm")).toBeInTheDocument();
+  });
+
+  it("renders a placeholder for words without a measurable WPM", () => {
+    render(
+      <TypedWordsDisplay
+        targetText="hello"
+        typedText="hello"
+        currentIndex={5}
+        fixedChars=""
+        wordStates={[
+          {
+            wordText: "hello",
+            startCharIndex: 0,
+            endCharIndex: 4,
+            wordWpm: null,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("\u2013")).toBeInTheDocument();
+  });
+
+  it("renders no WPM labels when word states are not provided", () => {
+    renderDisplay({
+      targetText: "hello world",
+      typedText: "hello world",
+      currentIndex: 11,
+      fixedChars: "",
+    });
+
+    expect(screen.queryByText(/wpm$/)).toBeNull();
   });
 });

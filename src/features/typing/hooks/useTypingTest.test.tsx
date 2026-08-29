@@ -18,6 +18,7 @@ function TestComponent() {
     currentIndex,
     currentWpm,
     currentAccuracy,
+    liveWpm,
     timeRemaining,
     handleKeyDown,
     handleStart,
@@ -33,6 +34,7 @@ function TestComponent() {
       <span data-testid="index">{currentIndex}</span>
       <span data-testid="wpm">{currentWpm}</span>
       <span data-testid="accuracy">{currentAccuracy}</span>
+      <span data-testid="live-wpm">{liveWpm}</span>
       <span data-testid="time">{timeRemaining ?? "unlimited"}</span>
       <button data-testid="start" onClick={handleStart}>
         Start
@@ -350,5 +352,75 @@ describe("useTypingTest", () => {
     });
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
+  });
+
+  it("records a keystroke log with timestamps during the test", async () => {
+    const store = createTestStore();
+    renderInTestView(store);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "abc");
+    });
+
+    const keystrokes = store.getState().typing.keystrokes;
+    expect(keystrokes).toHaveLength(3);
+    expect(keystrokes[0]).toMatchObject({
+      charIndex: 0,
+      timestamp: expect.any(Number),
+    });
+    expect(keystrokes[1]).toMatchObject({
+      charIndex: 1,
+      timestamp: expect.any(Number),
+    });
+  });
+
+  it("removes keystrokes from the log when a character is undone", async () => {
+    const store = createTestStore();
+    renderInTestView(store);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "ab{Backspace}");
+    });
+
+    const keystrokes = store.getState().typing.keystrokes;
+    expect(keystrokes).toHaveLength(1);
+    expect(keystrokes[0]).toMatchObject({ charIndex: 0 });
+  });
+
+  it("keeps the live WPM readout at zero until the window is satisfied", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "abc");
+    });
+
+    expect(screen.getByTestId("live-wpm")).toHaveTextContent("0");
+  });
+
+  it("builds the WPM timeline when the test completes", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setWordCount", payload: 2 });
+    store.dispatch({ type: "typingConfig/setDuration", payload: null });
+    store.dispatch({ type: "typingConfig/setMaxErrors", payload: null });
+    renderInTestView(store);
+
+    const words = store.getState().typing.targetText.split(" ");
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, `${words[0]} ${words[1]} `);
+    });
+
+    expect(screen.getByTestId("status")).toHaveTextContent("completed");
+    const timeline = store.getState().typing.wpmTimeline;
+    expect(Array.isArray(timeline)).toBe(true);
+    expect(timeline.length).toBeGreaterThan(0);
   });
 });

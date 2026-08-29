@@ -1,16 +1,18 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { WpmGraph } from "./WpmGraph";
-import { computeCumulativeWpm } from "../../utils/cumulativeWpm";
+import type { WpmTimelinePoint } from "../../metrics/wpm";
 
-const sampleHistory = Array.from({ length: 14 }, (_, i) => ({
-  second: i + 1,
-  totalTyped: (i + 1) * 5,
-  errors: 0,
-}));
+const sampleTimeline: WpmTimelinePoint[] = Array.from(
+  { length: 14 },
+  (_, i) => ({
+    second: i + 1,
+    wpm: 60,
+  }),
+);
 
 describe("WpmGraph", () => {
   it("renders an svg element with the graph", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     expect(screen.getByLabelText("WPM over time graph")).toBeInTheDocument();
     const svg = document.querySelector("svg");
     expect(svg).not.toBeNull();
@@ -18,7 +20,7 @@ describe("WpmGraph", () => {
   });
 
   it("renders axis labels for time and wpm", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const svg = document.querySelector("svg");
     expect(svg).not.toBeNull();
     const texts = Array.from(svg?.querySelectorAll("text") ?? []);
@@ -27,7 +29,7 @@ describe("WpmGraph", () => {
   });
 
   it("uses a 20 WPM step for the y-axis gridlines", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const texts = Array.from(document.querySelectorAll("text") ?? []);
     const values = texts
       .map((t) => t.textContent ?? "")
@@ -39,9 +41,8 @@ describe("WpmGraph", () => {
   });
 
   it("renders a cap line above the maximum WPM", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
-    const rolling = computeCumulativeWpm(sampleHistory);
-    const maxWpm = Math.max(...rolling.map((p) => p.wpm)); // 60
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
+    const maxWpm = Math.max(...sampleTimeline.map((p) => p.wpm)); // 60
     const capWpm = 80;
 
     expect(screen.getByTestId("wpm-cap-line")).toBeInTheDocument();
@@ -54,19 +55,19 @@ describe("WpmGraph", () => {
   });
 
   it("shows empty state when no data", () => {
-    render(<WpmGraph wpmHistory={[]} />);
+    render(<WpmGraph wpmTimeline={[]} />);
     expect(screen.getByText("No WPM data available")).toBeInTheDocument();
   });
 
   it("provides zoom controls", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     expect(screen.getByLabelText("Zoom in")).toBeInTheDocument();
     expect(screen.getByLabelText("Zoom out")).toBeInTheDocument();
     expect(screen.getByLabelText("Reset zoom")).toBeInTheDocument();
   });
 
   it("zooms in on zoom-in button click", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     expect(screen.getByText("1x")).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Zoom in"));
@@ -76,7 +77,7 @@ describe("WpmGraph", () => {
   });
 
   it("resets zoom via reset button", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
 
     fireEvent.click(screen.getByLabelText("Zoom in"));
     fireEvent.click(screen.getByLabelText("Zoom in"));
@@ -89,7 +90,7 @@ describe("WpmGraph", () => {
   });
 
   it("zooms out down to minimum", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
 
     fireEvent.click(screen.getByLabelText("Zoom out"));
 
@@ -97,12 +98,11 @@ describe("WpmGraph", () => {
   });
 
   it("keeps time labels as whole numbers when zoomed to a fractional window", () => {
-    const history = Array.from({ length: 12 }, (_, i) => ({
+    const timeline = Array.from({ length: 12 }, (_, i) => ({
       second: i + 1,
-      totalTyped: (i + 1) * 5,
-      errors: 0,
+      wpm: 60,
     }));
-    render(<WpmGraph wpmHistory={history} />);
+    render(<WpmGraph wpmTimeline={timeline} />);
 
     fireEvent.click(screen.getByLabelText("Zoom in"));
     fireEvent.click(screen.getByLabelText("Zoom in"));
@@ -119,10 +119,8 @@ describe("WpmGraph", () => {
   });
 
   it("prevents page scroll when the wheel is used over the graph", () => {
-    const { container } = render(<WpmGraph wpmHistory={sampleHistory} />);
-    const graph = container.querySelector(
-      '[aria-label="WPM over time graph"]',
-    );
+    const { container } = render(<WpmGraph wpmTimeline={sampleTimeline} />);
+    const graph = container.querySelector('[aria-label="WPM over time graph"]');
     expect(graph).not.toBeNull();
 
     const event = new WheelEvent("wheel", {
@@ -136,23 +134,35 @@ describe("WpmGraph", () => {
   });
 
   it("zooms in when scrolling up over the graph", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const graph = document.querySelector('[aria-label="WPM over time graph"]');
     expect(graph).not.toBeNull();
 
     act(() => {
       graph?.dispatchEvent(
-        new WheelEvent("wheel", { deltaY: -100, bubbles: true, cancelable: true }),
+        new WheelEvent("wheel", {
+          deltaY: -100,
+          bubbles: true,
+          cancelable: true,
+        }),
       );
     });
     act(() => {
       graph?.dispatchEvent(
-        new WheelEvent("wheel", { deltaY: -100, bubbles: true, cancelable: true }),
+        new WheelEvent("wheel", {
+          deltaY: -100,
+          bubbles: true,
+          cancelable: true,
+        }),
       );
     });
     act(() => {
       graph?.dispatchEvent(
-        new WheelEvent("wheel", { deltaY: -100, bubbles: true, cancelable: true }),
+        new WheelEvent("wheel", {
+          deltaY: -100,
+          bubbles: true,
+          cancelable: true,
+        }),
       );
     });
 
@@ -161,21 +171,19 @@ describe("WpmGraph", () => {
   });
 
   it("shows a tooltip when hovering a data point", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
-    const rolling = computeCumulativeWpm(sampleHistory);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const circles = Array.from(document.querySelectorAll("circle"));
     expect(circles.length).toBeGreaterThan(0);
 
     fireEvent.pointerEnter(circles[0]!);
 
     expect(
-      screen.getByText(`${rolling[0]!.wpm} WPM`),
+      screen.getByText(`${sampleTimeline[0]!.wpm} WPM`),
     ).toBeInTheDocument();
   });
 
   it("snaps the tooltip to the nearest vertical line on pointer move", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
-    const rolling = computeCumulativeWpm(sampleHistory);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const graph = document.querySelector('[aria-label="WPM over time graph"]');
     expect(graph).not.toBeNull();
 
@@ -185,32 +193,28 @@ describe("WpmGraph", () => {
     });
 
     expect(
-      screen.getByText(`${rolling[0]!.wpm} WPM`),
+      screen.getByText(`${sampleTimeline[0]!.wpm} WPM`),
     ).toBeInTheDocument();
   });
 
   it("resets pan and hover when the data window changes", () => {
-    const { rerender } = render(<WpmGraph wpmHistory={sampleHistory} />);
-    const rolling = computeCumulativeWpm(sampleHistory);
-    fireEvent.pointerEnter(
-      Array.from(document.querySelectorAll("circle"))[0]!,
-    );
+    const { rerender } = render(<WpmGraph wpmTimeline={sampleTimeline} />);
+    fireEvent.pointerEnter(Array.from(document.querySelectorAll("circle"))[0]!);
     expect(
-      screen.getByText(`${rolling[0]!.wpm} WPM`),
+      screen.getByText(`${sampleTimeline[0]!.wpm} WPM`),
     ).toBeInTheDocument();
 
-    const longerHistory = Array.from({ length: 12 }, (_, i) => ({
-      second: i + 1,
-      totalTyped: (i + 1) * 12,
-      errors: 0,
-    }));
-    rerender(<WpmGraph wpmHistory={longerHistory} />);
+    const longerTimeline: WpmTimelinePoint[] = Array.from(
+      { length: 12 },
+      (_, i) => ({ second: i + 1, wpm: 144 }),
+    );
+    rerender(<WpmGraph wpmTimeline={longerTimeline} />);
 
-    expect(screen.queryByText(`${rolling[0]!.wpm} WPM`)).toBeNull();
+    expect(screen.queryByText(`${sampleTimeline[0]!.wpm} WPM`)).toBeNull();
   });
 
   it("ignores a pointer down at minimum zoom", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const graph = screen.getByLabelText("WPM over time graph");
 
     expect(() => {
@@ -219,7 +223,7 @@ describe("WpmGraph", () => {
   });
 
   it("ignores pointer move without an active drag", () => {
-    render(<WpmGraph wpmHistory={sampleHistory} />);
+    render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const graph = screen.getByLabelText("WPM over time graph");
 
     expect(() => {

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useStore } from "react-redux";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
-import { store } from "@/app/store";
+import type { RootState } from "@/app/store";
 import {
   startReadyTest,
   startFromHome,
   updateTypedText,
+  refreshLiveWpm,
   appendTargetWords,
   completeTest,
   setElapsedTime,
@@ -20,13 +22,15 @@ import {
   selectTotalTyped,
   selectResults,
   selectPausedElapsed,
-  selectWpmHistory,
+  selectLiveWpm,
+  selectWpmTimeline,
   selectFixedChars,
 } from "../state/typingSlice";
 import {
   selectCurrentWpm,
   selectCurrentAccuracy,
 } from "../state/typingSelectors";
+import { computeWpmTimeline, buildWordStates } from "../metrics/wpm";
 import {
   selectDuration,
   selectWordCount,
@@ -40,6 +44,7 @@ import { useTimer } from "./useTimer";
 const WORD_BUFFER_SIZE = 20;
 const DEFAULT_WORD_COUNT = 50;
 const MIN_CHARS_FOR_WPM = 5;
+const LIVE_WPM_REFRESH_MS = 100;
 
 function countWordsWithErrors(
   targetText: string,
@@ -81,6 +86,7 @@ function countTypedWords(typedText: string): number {
 
 export function useTypingTest() {
   const dispatch = useAppDispatch();
+  const typingStore = useStore<RootState>();
   const status = useAppSelector(selectTypingStatus);
   const targetText = useAppSelector(selectTargetText);
   const typedText = useAppSelector(selectTypedText);
@@ -90,9 +96,10 @@ export function useTypingTest() {
   const totalTyped = useAppSelector(selectTotalTyped);
   const currentWpm = useAppSelector(selectCurrentWpm);
   const currentAccuracy = useAppSelector(selectCurrentAccuracy);
+  const liveWpm = useAppSelector(selectLiveWpm);
+  const wpmTimeline = useAppSelector(selectWpmTimeline);
   const results = useAppSelector(selectResults);
   const pausedElapsed = useAppSelector(selectPausedElapsed);
-  const wpmHistory = useAppSelector(selectWpmHistory);
   const fixedChars = useAppSelector(selectFixedChars);
 
   const configDuration = useAppSelector(selectDuration);
@@ -123,6 +130,14 @@ export function useTypingTest() {
     }
   }, [currentIndex, targetText, status, dispatch, configMaxWords]);
 
+  useEffect(() => {
+    if (status !== "active") return;
+    const intervalId = window.setInterval(() => {
+      dispatch(refreshLiveWpm());
+    }, LIVE_WPM_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [status, dispatch]);
+
   const handleTestComplete = useCallback(() => {
     const {
       typedText: finalTyped,
@@ -131,14 +146,11 @@ export function useTypingTest() {
       correctChars: finalCorrectChars,
       elapsedTime: finalElapsed,
       fixedChars: finalFixedChars,
-    } = store.getState().typing;
+      keystrokes: finalKeystrokes,
+    } = typingStore.getState().typing;
 
     let finalErrs = 0;
-    for (
-      let i = 0;
-      i < finalTyped.length && i < finalTarget.length;
-      i++
-    ) {
+    for (let i = 0; i < finalTyped.length && i < finalTarget.length; i++) {
       if (finalTyped[i] !== finalTarget[i]) finalErrs++;
     }
 
@@ -154,6 +166,9 @@ export function useTypingTest() {
       finalFixedChars,
     );
 
+    const wpmTimeline = computeWpmTimeline(finalKeystrokes);
+    const wordStates = buildWordStates(finalTyped, finalKeystrokes);
+
     dispatch(
       completeTest({
         results: {
@@ -163,16 +178,18 @@ export function useTypingTest() {
           correctChars: finalCorrectChars,
           incorrectChars: wordErrors,
           elapsedTime: elapsed,
+          wordStates,
         },
+        wpmTimeline,
       }),
     );
-  }, [dispatch]);
+  }, [dispatch, typingStore]);
 
   const handleTick = useCallback(
     (elapsedSeconds: number) => {
       dispatch(setElapsedTime(elapsedSeconds));
       if (elapsedSeconds <= 0) return;
-      const typing = store.getState().typing;
+      const typing = typingStore.getState().typing;
       if (typing.totalTyped < MIN_CHARS_FOR_WPM) return;
       dispatch(
         recordWpmSnapshot({
@@ -182,7 +199,7 @@ export function useTypingTest() {
         }),
       );
     },
-    [dispatch],
+    [dispatch, typingStore],
   );
 
   const isTimerRunning = status === "active";
@@ -207,11 +224,8 @@ export function useTypingTest() {
   }, [dispatch, status]);
 
   const checkCompletion = useCallback(
-    (
-      newTyped: string,
-      newFixedChars: string,
-    ) => {
-      const currentTarget = store.getState().typing.targetText;
+    (newTyped: string, newFixedChars: string) => {
+      const currentTarget = typingStore.getState().typing.targetText;
 
       if (
         configMaxWords !== null &&
@@ -235,7 +249,7 @@ export function useTypingTest() {
 
       return false;
     },
-    [configMaxWords, configMaxErrors, handleTestComplete],
+    [configMaxWords, configMaxErrors, handleTestComplete, typingStore],
   );
 
   const handleKeyDown = useCallback(
@@ -283,6 +297,7 @@ export function useTypingTest() {
               errors: newErrors,
               totalTyped: totalTypedRef.current,
               fixedChars: fixedCharsRef.current,
+              keystroke: null,
             }),
           );
         }
@@ -309,11 +324,7 @@ export function useTypingTest() {
       const wasPreviouslyIncorrect =
         fixedCharsRef.current.length > currentIndex &&
         fixedCharsRef.current[currentIndex] === "1";
-      const entry = isCorrect
-        ? wasPreviouslyIncorrect
-          ? "1"
-          : "0"
-        : "1";
+      const entry = isCorrect ? (wasPreviouslyIncorrect ? "1" : "0") : "1";
 
       let newFixedChars = fixedCharsRef.current;
       if (newFixedChars.length > currentIndex) {
@@ -328,6 +339,7 @@ export function useTypingTest() {
 
       totalTypedRef.current += 1;
 
+      const timestamp = performance.now();
       dispatch(
         updateTypedText({
           typedText: newTyped,
@@ -336,6 +348,7 @@ export function useTypingTest() {
           errors: errorsRef.current,
           totalTyped: totalTypedRef.current,
           fixedChars: newFixedChars,
+          keystroke: { timestamp, charIndex: currentIndex },
         }),
       );
 
@@ -372,14 +385,11 @@ export function useTypingTest() {
       correctChars: finalCorrectChars,
       elapsedTime: finalElapsed,
       fixedChars: finalFixedChars,
-    } = store.getState().typing;
+      keystrokes: finalKeystrokes,
+    } = typingStore.getState().typing;
 
     let finalErrs = 0;
-    for (
-      let i = 0;
-      i < finalTyped.length && i < finalTarget.length;
-      i++
-    ) {
+    for (let i = 0; i < finalTyped.length && i < finalTarget.length; i++) {
       if (finalTyped[i] !== finalTarget[i]) finalErrs++;
     }
 
@@ -401,6 +411,9 @@ export function useTypingTest() {
       finalFixedChars,
     );
 
+    const wpmTimeline = computeWpmTimeline(finalKeystrokes);
+    const wordStates = buildWordStates(finalTyped, finalKeystrokes);
+
     dispatch(
       completeTest({
         results: {
@@ -410,10 +423,12 @@ export function useTypingTest() {
           correctChars: finalCorrectChars,
           incorrectChars: wordErrors,
           elapsedTime: elapsed,
+          wordStates,
         },
+        wpmTimeline,
       }),
     );
-  }, [dispatch]);
+  }, [dispatch, typingStore]);
 
   const handleReset = useCallback(() => {
     correctCharsRef.current = 0;
@@ -443,13 +458,14 @@ export function useTypingTest() {
       currentIndex,
       currentWpm,
       currentAccuracy,
+      liveWpm,
+      wpmTimeline,
       timeRemaining,
       elapsedTime,
       errors,
       correctChars,
       totalTyped,
       results,
-      wpmHistory,
       fixedChars,
       handleStart,
       handleKeyDown,
@@ -466,13 +482,14 @@ export function useTypingTest() {
       currentIndex,
       currentWpm,
       currentAccuracy,
+      liveWpm,
+      wpmTimeline,
       timeRemaining,
       elapsedTime,
       errors,
       correctChars,
       totalTyped,
       results,
-      wpmHistory,
       fixedChars,
       handleStart,
       handleKeyDown,

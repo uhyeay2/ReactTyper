@@ -32,9 +32,7 @@ function getSubtitle(
     parts.push(`${maxErrors} max errors`);
   }
 
-  return parts.length > 0
-    ? parts.join(" \u00b7 ")
-    : "Free typing";
+  return parts.length > 0 ? parts.join(" \u00b7 ") : "Free typing";
 }
 
 export function TypingTest() {
@@ -50,11 +48,12 @@ export function TypingTest() {
     currentIndex,
     fixedChars,
     currentWpm,
+    liveWpm,
     currentAccuracy,
+    wpmTimeline,
     timeRemaining,
     elapsedTime,
     results,
-    wpmHistory,
     handleKeyDown,
     handlePause,
     handleResume,
@@ -86,27 +85,20 @@ export function TypingTest() {
       {showDisplay && (
         <div className={styles.statsBar}>
           <div className={styles.stat}>
-            <span className={styles.statValue}>{currentWpm}</span>
+            <span className={styles.statValue}>{Math.round(liveWpm)}</span>
             <span className={styles.statLabel}>WPM</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statValue}>
-              {currentAccuracy}%
-            </span>
+            <span className={styles.statValue}>{currentAccuracy}%</span>
             <span className={styles.statLabel}>Accuracy</span>
           </div>
           <div className={styles.timer}>
-            {showCountdown
-              ? `${timeRemaining ?? 0}s`
-              : `${elapsedTime}s`}
+            {showCountdown ? `${timeRemaining ?? 0}s` : `${elapsedTime}s`}
           </div>
         </div>
       )}
 
-      <TypingInput
-        status={status}
-        onKeyDown={handleKeyDown}
-      >
+      <TypingInput status={status} onKeyDown={handleKeyDown}>
         {showDisplay && <TypingDisplay />}
       </TypingInput>
 
@@ -171,7 +163,7 @@ export function TypingTest() {
             typedText={typedText}
             currentIndex={currentIndex}
             fixedChars={fixedChars}
-            wpmHistory={wpmHistory}
+            wpmTimeline={wpmTimeline}
           />
           <div className={styles.configSection}>
             <h3 className={styles.configTitle}>Test Settings</h3>

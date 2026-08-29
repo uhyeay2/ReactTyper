@@ -9,6 +9,7 @@ const results: TypingResults = {
   correctChars: 300,
   incorrectChars: 4,
   elapsedTime: 60,
+  wordStates: [],
 };
 
 describe("ResultsDisplay", () => {
@@ -20,7 +21,7 @@ describe("ResultsDisplay", () => {
         typedText="hello"
         currentIndex={5}
         fixedChars=""
-        wpmHistory={[{ second: 1, totalTyped: 9, errors: 0 }]}
+        wpmTimeline={[{ second: 1, wpm: 60 }]}
       />,
     );
 
@@ -39,7 +40,7 @@ describe("ResultsDisplay", () => {
         typedText="hello"
         currentIndex={5}
         fixedChars=""
-        wpmHistory={[]}
+        wpmTimeline={[]}
       />,
     );
 
@@ -56,14 +57,12 @@ describe("ResultsDisplay", () => {
         typedText="hello"
         currentIndex={5}
         fixedChars=""
-        wpmHistory={[]}
+        wpmTimeline={[]}
       />,
     );
 
     expect(screen.getByText("Your Typed Words")).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Typed test text review"),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Typed test text review")).toBeInTheDocument();
   });
 
   it("renders wpm over time section", () => {
@@ -74,13 +73,36 @@ describe("ResultsDisplay", () => {
         typedText="hello"
         currentIndex={5}
         fixedChars=""
-        wpmHistory={[{ second: 1, totalTyped: 9, errors: 0 }]}
+        wpmTimeline={[{ second: 1, wpm: 60 }]}
       />,
     );
 
     expect(screen.getByText("WPM Over Time")).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("WPM over time graph"),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("WPM over time graph")).toBeInTheDocument();
+  });
+
+  it("renders per-word WPM from the results word states", () => {
+    render(
+      <ResultsDisplay
+        results={{
+          ...results,
+          wordStates: [
+            {
+              wordText: "hello",
+              startCharIndex: 0,
+              endCharIndex: 4,
+              wordWpm: 42,
+            },
+          ],
+        }}
+        targetText="hello"
+        typedText="hello"
+        currentIndex={5}
+        fixedChars=""
+        wpmTimeline={[]}
+      />,
+    );
+
+    expect(screen.getByText("42 wpm")).toBeInTheDocument();
   });
 });

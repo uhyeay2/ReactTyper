@@ -6,23 +6,21 @@ const selectTyping = (state: { typing: TypingState }) => state.typing;
 
 const MIN_CHARS_FOR_WPM = 5;
 
-export const selectCurrentWpm = createSelector(
-  [selectTyping],
-  (typing) => {
-    if (!typing.startTime || typing.elapsedTime <= 0) return 0;
-    if (typing.totalTyped < MIN_CHARS_FOR_WPM) return 0;
-    const snapshots = [
-      ...typing.wpmHistory,
-      {
-        second: typing.elapsedTime,
-        totalTyped: typing.totalTyped,
-        errors: typing.errors,
-      },
-    ];
-    const points = computeCumulativeWpm(snapshots);
-    return points.length > 0 ? points[points.length - 1].wpm : 0;
-  },
-);
+export const selectCurrentWpm = createSelector([selectTyping], (typing) => {
+  if (!typing.startTime || typing.elapsedTime <= 0) return 0;
+  if (typing.totalTyped < MIN_CHARS_FOR_WPM) return 0;
+  const snapshots = [
+    ...typing.wpmHistory,
+    {
+      second: typing.elapsedTime,
+      totalTyped: typing.totalTyped,
+      errors: typing.errors,
+    },
+  ];
+  const points = computeCumulativeWpm(snapshots);
+  const lastPoint = points[points.length - 1];
+  return lastPoint ? lastPoint.wpm : 0;
+});
 
 export const selectCurrentAccuracy = createSelector(
   [selectTyping],
@@ -32,20 +30,17 @@ export const selectCurrentAccuracy = createSelector(
   },
 );
 
-export const selectFinalErrors = createSelector(
-  [selectTyping],
-  (typing) => {
-    let errors = 0;
-    for (
-      let i = 0;
-      i < typing.typedText.length && i < typing.targetText.length;
-      i++
-    ) {
-      if (typing.typedText[i] !== typing.targetText[i]) errors++;
-    }
-    return errors;
-  },
-);
+export const selectFinalErrors = createSelector([selectTyping], (typing) => {
+  let errors = 0;
+  for (
+    let i = 0;
+    i < typing.typedText.length && i < typing.targetText.length;
+    i++
+  ) {
+    if (typing.typedText[i] !== typing.targetText[i]) errors++;
+  }
+  return errors;
+});
 
 export const computeCharStates = (
   targetText: string,
@@ -66,13 +61,11 @@ export const computeCharStates = (
   });
 };
 
-export const selectCharStates = createSelector(
-  [selectTyping],
-  (typing) =>
-    computeCharStates(
-      typing.targetText,
-      typing.typedText,
-      typing.currentIndex,
-      typing.fixedChars,
-    ),
+export const selectCharStates = createSelector([selectTyping], (typing) =>
+  computeCharStates(
+    typing.targetText,
+    typing.typedText,
+    typing.currentIndex,
+    typing.fixedChars,
+  ),
 );

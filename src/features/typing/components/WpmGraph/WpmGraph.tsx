@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { WpmSnapshot } from "../../state/typingTypes";
-import { computeCumulativeWpm } from "../../utils/cumulativeWpm";
-import type { WpmPoint } from "../../utils/cumulativeWpm";
+import type { WpmTimelinePoint } from "../../metrics/wpm";
 import styles from "./WpmGraph.module.css";
 
 const MIN_ZOOM = 1;
@@ -22,33 +20,34 @@ interface WheelLike {
 }
 
 interface WpmGraphProps {
-  wpmHistory: WpmSnapshot[];
+  wpmTimeline: WpmTimelinePoint[];
 }
 
-function getMaxWpm(points: WpmPoint[]): number {
+function getMaxWpm(points: WpmTimelinePoint[]): number {
   if (points.length === 0) return 0;
   return Math.max(...points.map((p) => p.wpm), 0);
 }
 
 function getAxisMax(maxWpm: number): number {
-  return Math.max(WPM_TICK_STEP, Math.ceil((maxWpm + 1) / WPM_TICK_STEP) * WPM_TICK_STEP);
+  return Math.max(
+    WPM_TICK_STEP,
+    Math.ceil((maxWpm + 1) / WPM_TICK_STEP) * WPM_TICK_STEP,
+  );
 }
 
-export function WpmGraph({ wpmHistory }: WpmGraphProps) {
+export function WpmGraph({ wpmTimeline }: WpmGraphProps) {
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [pan, setPan] = useState(0);
-  const [hovered, setHovered] = useState<WpmPoint | null>(null);
+  const [hovered, setHovered] = useState<WpmTimelinePoint | null>(null);
   const dragRef = useRef<{ startX: number; startPan: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
 
-  const wpmPoints = useMemo(() => {
-    return computeCumulativeWpm(wpmHistory);
-  }, [wpmHistory]);
+  const wpmPoints = wpmTimeline;
 
   const totalSeconds = useMemo(() => {
     if (wpmPoints.length === 0) return 0;
-    return wpmPoints[wpmPoints.length - 1].second;
+    return wpmPoints[wpmPoints.length - 1]!.second;
   }, [wpmPoints]);
 
   useEffect(() => {
@@ -138,7 +137,10 @@ export function WpmGraph({ wpmHistory }: WpmGraphProps) {
       e.preventDefault();
       const newZoom = Math.min(
         MAX_ZOOM,
-        Math.max(MIN_ZOOM, zoom + (e.deltaY > 0 ? -WHEEL_ZOOM_STEP : WHEEL_ZOOM_STEP)),
+        Math.max(
+          MIN_ZOOM,
+          zoom + (e.deltaY > 0 ? -WHEEL_ZOOM_STEP : WHEEL_ZOOM_STEP),
+        ),
       );
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) {
@@ -191,7 +193,7 @@ export function WpmGraph({ wpmHistory }: WpmGraphProps) {
         clampedPan +
         ((cursorX - PADDING_LEFT) / chartInnerWidth) * visibleWindow;
 
-      let nearest: WpmPoint | null = null;
+      let nearest: WpmTimelinePoint | null = null;
       let nearestDistance = Number.POSITIVE_INFINITY;
       for (const point of visibleData) {
         const distance = Math.abs(point.second - mouseSecond);
@@ -218,12 +220,9 @@ export function WpmGraph({ wpmHistory }: WpmGraphProps) {
     setHovered(null);
   }, []);
 
-  const handleDataPointHover = useCallback(
-    (point: WpmPoint) => {
-      if (!dragRef.current) setHovered(point);
-    },
-    [],
-  );
+  const handleDataPointHover = useCallback((point: WpmTimelinePoint) => {
+    if (!dragRef.current) setHovered(point);
+  }, []);
 
   const handleZoomIn = useCallback(() => {
     setZoom((z) => Math.min(MAX_ZOOM, z + 1));
@@ -238,7 +237,7 @@ export function WpmGraph({ wpmHistory }: WpmGraphProps) {
     setPan(0);
   }, []);
 
-  if (wpmHistory.length === 0) {
+  if (wpmTimeline.length === 0) {
     return <div className={styles.empty}>No WPM data available</div>;
   }
 
@@ -256,9 +255,7 @@ export function WpmGraph({ wpmHistory }: WpmGraphProps) {
       onPointerLeave={handlePointerLeave}
     >
       <div className={styles.toolbar}>
-        <span className={styles.zoomLabel}>
-          {Math.round(clampedZoom)}x
-        </span>
+        <span className={styles.zoomLabel}>{Math.round(clampedZoom)}x</span>
         <button
           type="button"
           className={styles.controlBtn}
@@ -356,11 +353,7 @@ export function WpmGraph({ wpmHistory }: WpmGraphProps) {
         ))}
 
         {linePath.length > 0 && (
-          <polyline
-            points={linePath}
-            className={styles.linePath}
-            fill="none"
-          />
+          <polyline points={linePath} className={styles.linePath} fill="none" />
         )}
 
         {visibleData.map((point) => (

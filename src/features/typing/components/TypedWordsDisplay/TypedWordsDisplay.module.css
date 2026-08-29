@@ -19,6 +19,23 @@
 }
 
 .word {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: top;
+  margin-right: 10px;
+  margin-bottom: 4px;
+}
+
+.wordChars {
+  white-space: nowrap;
+}
+
+.wordLabel {
+  font-family: sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-align: center;
   white-space: nowrap;
 }
 

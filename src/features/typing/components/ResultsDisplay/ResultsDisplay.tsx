@@ -1,4 +1,5 @@
-import type { TypingResults, WpmSnapshot } from "../../state/typingTypes";
+import type { TypingResults } from "../../state/typingTypes";
+import type { WpmTimelinePoint } from "../../metrics/wpm";
 import { TypedWordsDisplay } from "../TypedWordsDisplay/TypedWordsDisplay";
 import { WpmGraph } from "../WpmGraph/WpmGraph";
 import styles from "./ResultsDisplay.module.css";
@@ -9,7 +10,7 @@ interface ResultsDisplayProps {
   typedText: string;
   currentIndex: number;
   fixedChars: string;
-  wpmHistory: WpmSnapshot[];
+  wpmTimeline: WpmTimelinePoint[];
 }
 
 export function ResultsDisplay({
@@ -18,7 +19,7 @@ export function ResultsDisplay({
   typedText,
   currentIndex,
   fixedChars,
-  wpmHistory,
+  wpmTimeline,
 }: ResultsDisplayProps) {
   return (
     <div className={styles.results}>
@@ -65,12 +66,13 @@ export function ResultsDisplay({
           typedText={typedText}
           currentIndex={currentIndex}
           fixedChars={fixedChars}
+          wordStates={results.wordStates}
         />
       </section>
 
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>WPM Over Time</h3>
-        <WpmGraph wpmHistory={wpmHistory} />
+        <WpmGraph wpmTimeline={wpmTimeline} />
       </section>
     </div>
   );

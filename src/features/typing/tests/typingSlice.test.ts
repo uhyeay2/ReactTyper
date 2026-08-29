@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import typingReducer, {
   startTest,
   updateTypedText,
+  refreshLiveWpm,
   completeTest,
   resetToReady,
   refreshTest,
@@ -15,6 +16,9 @@ import typingReducer, {
   selectResults,
   selectView,
   selectWpmHistory,
+  selectLiveWpm,
+  selectWpmTimeline,
+  selectKeystrokes,
   pauseTest,
   resumeTest,
   selectFinalErrors,
@@ -37,6 +41,9 @@ const initialState: TypingState = {
   fixedChars: "",
   pausedElapsed: 0,
   wpmHistory: [],
+  keystrokes: [],
+  liveWpm: 0,
+  wpmTimeline: [],
 };
 
 describe("typingSlice", () => {
@@ -97,16 +104,18 @@ describe("typingSlice", () => {
           errors: 0,
           totalTyped: 1,
           fixedChars: "0",
+          keystroke: { timestamp: 123, charIndex: 0 },
         }),
       );
       expect(state.typedText).toBe("h");
       expect(state.currentIndex).toBe(1);
       expect(state.correctChars).toBe(1);
+      expect(state.keystrokes).toEqual([{ timestamp: 123, charIndex: 0 }]);
     });
   });
 
   describe("completeTest", () => {
-    it("sets status to completed and stores results", () => {
+    it("sets status to completed and stores results and timeline", () => {
       const results = {
         wpm: 60,
         grossWpm: 65,
@@ -114,13 +123,15 @@ describe("typingSlice", () => {
         correctChars: 200,
         incorrectChars: 10,
         elapsedTime: 60,
+        wordStates: [],
       };
       const state = typingReducer(
         { ...initialState, status: "active" },
-        completeTest({ results }),
+        completeTest({ results, wpmTimeline: [{ second: 1, wpm: 60 }] }),
       );
       expect(state.status).toBe("completed");
       expect(state.results).toEqual(results);
+      expect(state.wpmTimeline).toEqual([{ second: 1, wpm: 60 }]);
     });
   });
 
@@ -184,6 +195,7 @@ describe("typingSlice", () => {
         correctChars: 200,
         incorrectChars: 10,
         elapsedTime: 60,
+        wordStates: [],
       };
       const state = { typing: { ...initialState, results } };
       expect(selectResults(state)).toEqual(results);
@@ -242,6 +254,7 @@ describe("typingSlice", () => {
             correctChars: 100,
             incorrectChars: 5,
             elapsedTime: 60,
+            wordStates: [],
           },
         },
         startFromHome({ wordCount: 25 }),
@@ -251,6 +264,121 @@ describe("typingSlice", () => {
       expect(state.typedText).toBe("");
       expect(state.currentIndex).toBe(0);
       expect(state.results).toBeNull();
+    });
+  });
+
+  describe("keystroke log", () => {
+    it("appends a keystroke on each typed character", () => {
+      let state = typingReducer(
+        initialState,
+        updateTypedText({
+          typedText: "h",
+          currentIndex: 1,
+          correctChars: 1,
+          errors: 0,
+          totalTyped: 1,
+          fixedChars: "0",
+          keystroke: { timestamp: 1, charIndex: 0 },
+        }),
+      );
+      state = typingReducer(
+        state,
+        updateTypedText({
+          typedText: "he",
+          currentIndex: 2,
+          correctChars: 2,
+          errors: 0,
+          totalTyped: 2,
+          fixedChars: "00",
+          keystroke: { timestamp: 2, charIndex: 1 },
+        }),
+      );
+      expect(state.keystrokes).toEqual([
+        { timestamp: 1, charIndex: 0 },
+        { timestamp: 2, charIndex: 1 },
+      ]);
+    });
+
+    it("pops the last keystroke when typing is undone (backspace)", () => {
+      let state = typingReducer(
+        initialState,
+        updateTypedText({
+          typedText: "h",
+          currentIndex: 1,
+          correctChars: 1,
+          errors: 0,
+          totalTyped: 1,
+          fixedChars: "0",
+          keystroke: { timestamp: 1, charIndex: 0 },
+        }),
+      );
+      state = typingReducer(
+        state,
+        updateTypedText({
+          typedText: "he",
+          currentIndex: 2,
+          correctChars: 2,
+          errors: 0,
+          totalTyped: 2,
+          fixedChars: "00",
+          keystroke: { timestamp: 2, charIndex: 1 },
+        }),
+      );
+      state = typingReducer(
+        state,
+        updateTypedText({
+          typedText: "h",
+          currentIndex: 1,
+          correctChars: 1,
+          errors: 0,
+          totalTyped: 1,
+          fixedChars: "0",
+          keystroke: null,
+        }),
+      );
+      expect(state.keystrokes).toEqual([{ timestamp: 1, charIndex: 0 }]);
+    });
+  });
+
+  describe("live WPM", () => {
+    it("stays at zero before the live window is satisfied", () => {
+      const state = typingReducer(
+        initialState,
+        updateTypedText({
+          typedText: "h",
+          currentIndex: 1,
+          correctChars: 1,
+          errors: 0,
+          totalTyped: 1,
+          fixedChars: "0",
+          keystroke: { timestamp: 0, charIndex: 0 },
+        }),
+      );
+      expect(state.liveWpm).toBe(0);
+    });
+
+    it("refreshLiveWpm recomputes from the existing keystroke log", () => {
+      const keystrokes = Array.from({ length: 12 }, (_, i) => ({
+        timestamp: i * 200,
+        charIndex: i,
+      }));
+      const state = typingReducer(
+        { ...initialState, keystrokes },
+        refreshLiveWpm(),
+      );
+      expect(state.liveWpm).toBeGreaterThan(0);
+    });
+
+    it("keeps the previous value while the window is below the time threshold", () => {
+      const keystrokes = Array.from({ length: 12 }, (_, i) => ({
+        timestamp: i * 50,
+        charIndex: i,
+      }));
+      const state = typingReducer(
+        { ...initialState, liveWpm: 41, keystrokes },
+        refreshLiveWpm(),
+      );
+      expect(state.liveWpm).toBe(41);
     });
   });
 
@@ -303,7 +431,10 @@ describe("typingSlice", () => {
   describe("wpmHistory reset", () => {
     it("startFromHome resets wpmHistory", () => {
       const state = typingReducer(
-        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        {
+          ...initialState,
+          wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }],
+        },
         startFromHome({ wordCount: 10 }),
       );
       expect(state.wpmHistory).toEqual([]);
@@ -311,7 +442,10 @@ describe("typingSlice", () => {
 
     it("navigateHome resets wpmHistory", () => {
       const state = typingReducer(
-        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        {
+          ...initialState,
+          wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }],
+        },
         navigateHome(),
       );
       expect(state.wpmHistory).toEqual([]);
@@ -319,7 +453,10 @@ describe("typingSlice", () => {
 
     it("resetToReady resets wpmHistory", () => {
       const state = typingReducer(
-        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        {
+          ...initialState,
+          wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }],
+        },
         resetToReady(),
       );
       expect(state.wpmHistory).toEqual([]);
@@ -327,7 +464,10 @@ describe("typingSlice", () => {
 
     it("refreshTest resets wpmHistory", () => {
       const state = typingReducer(
-        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        {
+          ...initialState,
+          wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }],
+        },
         refreshTest(),
       );
       expect(state.wpmHistory).toEqual([]);
@@ -339,6 +479,57 @@ describe("typingSlice", () => {
       const history = [{ second: 1, totalTyped: 5, errors: 0 }];
       const state = { typing: { ...initialState, wpmHistory: history } };
       expect(selectWpmHistory(state)).toEqual(history);
+    });
+  });
+
+  describe("live metric selectors", () => {
+    it("selectLiveWpm returns the live WPM value", () => {
+      const state = { typing: { ...initialState, liveWpm: 42.5 } };
+      expect(selectLiveWpm(state)).toBe(42.5);
+    });
+
+    it("selectWpmTimeline returns the chart timeline", () => {
+      const timeline = [{ second: 1, wpm: 60 }];
+      const state = { typing: { ...initialState, wpmTimeline: timeline } };
+      expect(selectWpmTimeline(state)).toEqual(timeline);
+    });
+
+    it("selectKeystrokes returns the keystroke log", () => {
+      const keystrokes = [{ timestamp: 1, charIndex: 0 }];
+      const state = { typing: { ...initialState, keystrokes } };
+      expect(selectKeystrokes(state)).toEqual(keystrokes);
+    });
+  });
+
+  describe("live metric reset", () => {
+    it("startFromHome resets keystrokes, liveWpm, and timeline", () => {
+      const state = typingReducer(
+        {
+          ...initialState,
+          keystrokes: [{ timestamp: 1, charIndex: 0 }],
+          liveWpm: 55,
+          wpmTimeline: [{ second: 1, wpm: 60 }],
+        },
+        startFromHome({ wordCount: 10 }),
+      );
+      expect(state.keystrokes).toEqual([]);
+      expect(state.liveWpm).toBe(0);
+      expect(state.wpmTimeline).toEqual([]);
+    });
+
+    it("resetToReady resets keystrokes, liveWpm, and timeline", () => {
+      const state = typingReducer(
+        {
+          ...initialState,
+          keystrokes: [{ timestamp: 1, charIndex: 0 }],
+          liveWpm: 55,
+          wpmTimeline: [{ second: 1, wpm: 60 }],
+        },
+        resetToReady(),
+      );
+      expect(state.keystrokes).toEqual([]);
+      expect(state.liveWpm).toBe(0);
+      expect(state.wpmTimeline).toEqual([]);
     });
   });
 

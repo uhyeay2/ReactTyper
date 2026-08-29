@@ -1,8 +1,11 @@
+import type { Keystroke, WordState, WpmTimelinePoint } from "../metrics/wpm";
+
 export type TestStatus = "idle" | "ready" | "active" | "paused" | "completed";
 
 export type ViewType = "home" | "test";
 
-export type CharState = "pending" | "correct" | "fixed" | "incorrect" | "current";
+export type CharState =
+  "pending" | "correct" | "fixed" | "incorrect" | "current";
 
 export interface TypingResults {
   wpm: number;
@@ -11,6 +14,7 @@ export interface TypingResults {
   correctChars: number;
   incorrectChars: number;
   elapsedTime: number;
+  wordStates: WordState[];
 }
 
 export interface WpmSnapshot {
@@ -35,4 +39,7 @@ export interface TypingState {
   fixedChars: string;
   pausedElapsed: number;
   wpmHistory: WpmSnapshot[];
+  keystrokes: Keystroke[];
+  liveWpm: number;
+  wpmTimeline: WpmTimelinePoint[];
 }
