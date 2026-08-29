@@ -201,7 +201,7 @@ describe("TypingTest", () => {
   });
 
   it("returns to ready state when Try Again is clicked from results", async () => {
-    renderInTestView();
+    const { store } = renderInTestView();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
@@ -213,11 +213,14 @@ describe("TypingTest", () => {
       vi.advanceTimersByTime(60_000);
     });
 
+    const originalTarget = store.getState().typing.targetText;
+
     act(() => {
       screen.getByText("Try Again").click();
     });
 
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
+    expect(store.getState().typing.targetText).toBe(originalTarget);
   });
 
   it("renders typing display with target text after first keystroke", async () => {
@@ -374,7 +377,7 @@ describe("TypingTest", () => {
   });
 
   it("returns to ready state when Reset is clicked during the test", async () => {
-    renderInTestView();
+    const { store } = renderInTestView();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
@@ -382,11 +385,14 @@ describe("TypingTest", () => {
       await user.type(input, "ab");
     });
 
+    const originalTarget = store.getState().typing.targetText;
+
     act(() => {
       screen.getByText("Reset").click();
     });
 
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
+    expect(store.getState().typing.targetText).toBe(originalTarget);
   });
 
   it("refreshes to a new ready state when Refresh is clicked during the test", async () => {
@@ -426,7 +432,7 @@ describe("TypingTest", () => {
   });
 
   it("refreshes to a new ready state when New Words is clicked from results", async () => {
-    renderInTestView();
+    const { store } = renderInTestView();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
@@ -439,12 +445,14 @@ describe("TypingTest", () => {
     });
 
     expect(screen.getByText("New Words")).toBeInTheDocument();
+    const originalTarget = store.getState().typing.targetText;
 
     act(() => {
       screen.getByText("New Words").click();
     });
 
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
+    expect(store.getState().typing.targetText).not.toBe(originalTarget);
   });
 
   it("shows word progress when a word limit is set", async () => {

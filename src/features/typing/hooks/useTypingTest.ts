@@ -14,6 +14,7 @@ import {
   recordLiveWpm,
   pauseTest,
   resumeTest,
+  resetToReady,
   selectTypingStatus,
   selectTargetText,
   selectTypedText,
@@ -370,10 +371,8 @@ export function useTypingTest() {
     errorsRef.current = 0;
     totalTypedRef.current = 0;
     fixedCharsRef.current = "";
-    dispatch(
-      startFromHome({ wordCount: configMaxWords ?? DEFAULT_WORD_COUNT }),
-    );
-  }, [dispatch, configMaxWords]);
+    dispatch(resetToReady());
+  }, [dispatch]);
 
   const handleRefresh = useCallback(() => {
     correctCharsRef.current = 0;
