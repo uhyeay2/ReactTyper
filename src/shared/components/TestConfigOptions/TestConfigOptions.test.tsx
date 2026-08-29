@@ -95,6 +95,66 @@ describe("TestConfigOptions", () => {
     expect(state.maxErrors).toBeNull();
   });
 
+  it("selecting all None options stays selected and also enables Zen Mode", async () => {
+    const { store } = renderWithStore();
+    const user = userEvent.setup();
+
+    await user.click(screen.getAllByText("None")[0]!);
+    await user.click(screen.getAllByText("None")[1]!);
+    await user.click(screen.getAllByText("None")[2]!);
+
+    const state = store.getState().typingConfig;
+    expect(state.isZenMode).toBe(true);
+    expect(state.duration).toBeNull();
+    expect(state.wordCount).toBeNull();
+    expect(state.maxErrors).toBeNull();
+
+    for (const none of screen.getAllByText("None")) {
+      expect(none.className).toContain("active");
+    }
+    expect(screen.getByText("Zen Mode").className).toContain("active");
+  });
+
+  it("selecting Zen Mode keeps all None options selected", async () => {
+    const { store } = renderWithStore();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByText("Zen Mode"));
+
+    const state = store.getState().typingConfig;
+    expect(state.isZenMode).toBe(true);
+    expect(state.duration).toBeNull();
+    expect(state.wordCount).toBeNull();
+    expect(state.maxErrors).toBeNull();
+
+    for (const none of screen.getAllByText("None")) {
+      expect(none.className).toContain("active");
+    }
+    expect(screen.getByText("Zen Mode").className).toContain("active");
+  });
+
+  it("selecting Zen Mode again while already in Zen Mode is a no-op", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setZenMode", payload: true });
+    renderWithStore(store);
+    const user = userEvent.setup();
+
+    const stateBefore = store.getState().typingConfig;
+    await user.click(screen.getByText("Zen Mode"));
+    const stateAfter = store.getState().typingConfig;
+
+    expect(stateAfter.isZenMode).toBe(true);
+    expect(stateAfter.duration).toBeNull();
+    expect(stateAfter.wordCount).toBeNull();
+    expect(stateAfter.maxErrors).toBeNull();
+    expect(stateAfter).toEqual(stateBefore);
+
+    expect(screen.getByText("Zen Mode").className).toContain("active");
+    for (const none of screen.getAllByText("None")) {
+      expect(none.className).toContain("active");
+    }
+  });
+
   it("handles custom time input in mm:ss format", async () => {
     const { store } = renderWithStore();
     const user = userEvent.setup();

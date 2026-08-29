@@ -192,8 +192,8 @@ export function TestConfigOptions() {
   );
 
   const handleZenToggle = useCallback(() => {
-    dispatch(setZenMode(!isZenMode));
-  }, [dispatch, isZenMode]);
+    dispatch(setZenMode(true));
+  }, [dispatch]);
 
   return (
     <div className={styles.config}>
@@ -227,7 +227,7 @@ export function TestConfigOptions() {
           />
           <button
             type="button"
-            className={`${styles.presetBtn} ${!isZenMode && configDuration === null ? styles.active : ""}`}
+            className={`${styles.presetBtn} ${configDuration === null ? styles.active : ""}`}
             onClick={() => {
               dispatch(setDuration(null));
               setCustomTimeInput("");
@@ -263,7 +263,7 @@ export function TestConfigOptions() {
           />
           <button
             type="button"
-            className={`${styles.presetBtn} ${!isZenMode && configWordCount === null ? styles.active : ""}`}
+            className={`${styles.presetBtn} ${configWordCount === null ? styles.active : ""}`}
             onClick={() => {
               dispatch(setWordCount(null));
               setCustomWordsInput("");
@@ -299,7 +299,7 @@ export function TestConfigOptions() {
           />
           <button
             type="button"
-            className={`${styles.presetBtn} ${!isZenMode && configMaxErrors === null ? styles.active : ""}`}
+            className={`${styles.presetBtn} ${configMaxErrors === null ? styles.active : ""}`}
             onClick={() => {
               dispatch(setMaxErrors(null));
               setCustomErrorsInput("");
