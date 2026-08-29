@@ -1,11 +1,25 @@
-import type { TypingResults } from "../../state/typingTypes";
+import type { TypingResults, WpmSnapshot } from "../../state/typingTypes";
+import { TypedWordsDisplay } from "../TypedWordsDisplay/TypedWordsDisplay";
+import { WpmGraph } from "../WpmGraph/WpmGraph";
 import styles from "./ResultsDisplay.module.css";
 
 interface ResultsDisplayProps {
   results: TypingResults;
+  targetText: string;
+  typedText: string;
+  currentIndex: number;
+  fixedChars: string;
+  wpmHistory: WpmSnapshot[];
 }
 
-export function ResultsDisplay({ results }: ResultsDisplayProps) {
+export function ResultsDisplay({
+  results,
+  targetText,
+  typedText,
+  currentIndex,
+  fixedChars,
+  wpmHistory,
+}: ResultsDisplayProps) {
   return (
     <div className={styles.results}>
       <h2 className={styles.title}>Test Complete</h2>
@@ -41,6 +55,23 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
           <span className={styles.detailValue}>{results.elapsedTime}s</span>
         </div>
       </div>
+
+      <div className={styles.divider} />
+
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Your Typed Words</h3>
+        <TypedWordsDisplay
+          targetText={targetText}
+          typedText={typedText}
+          currentIndex={currentIndex}
+          fixedChars={fixedChars}
+        />
+      </section>
+
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>WPM Over Time</h3>
+        <WpmGraph wpmHistory={wpmHistory} />
+      </section>
     </div>
   );
 }

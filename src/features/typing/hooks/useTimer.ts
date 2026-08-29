@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface UseTimerOptions {
-  duration: number;
+  duration: number | null;
   isRunning: boolean;
   onComplete: () => void;
   onTick?: (elapsedSeconds: number) => void;
@@ -15,7 +15,11 @@ export function useTimer({
   onTick,
   offset = 0,
 }: UseTimerOptions) {
-  const [timeRemaining, setTimeRemaining] = useState(duration);
+  const isUnlimited = duration === null;
+  const effectiveDuration = duration ?? 0;
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(
+    effectiveDuration,
+  );
   const [elapsedTime, setElapsedTime] = useState(0);
   const startTimeRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
@@ -45,16 +49,22 @@ export function useTimer({
         if (startTimeRef.current === null) return;
         const elapsed =
           offsetRef.current + (now - startTimeRef.current) / 1000;
-        const remaining = Math.max(0, duration - elapsed);
 
-        setElapsedTime(Math.floor(elapsed));
-        setTimeRemaining(Math.ceil(remaining));
-        onTickRef.current?.(Math.floor(elapsed));
+        if (isUnlimited) {
+          setElapsedTime(Math.floor(elapsed));
+          setTimeRemaining(null);
+          onTickRef.current?.(Math.floor(elapsed));
+        } else {
+          const remaining = Math.max(0, effectiveDuration - elapsed);
+          setElapsedTime(Math.floor(elapsed));
+          setTimeRemaining(Math.ceil(remaining));
+          onTickRef.current?.(Math.floor(elapsed));
 
-        if (remaining <= 0) {
-          completedRef.current = true;
-          onCompleteRef.current();
-          return;
+          if (remaining <= 0) {
+            completedRef.current = true;
+            onCompleteRef.current();
+            return;
+          }
         }
 
         rafRef.current = requestAnimationFrame(tick);
@@ -68,12 +78,12 @@ export function useTimer({
     }
 
     if (!completedRef.current) {
-      setTimeRemaining(duration);
+      setTimeRemaining(isUnlimited ? null : effectiveDuration);
       setElapsedTime(0);
     }
 
     return undefined;
-  }, [isRunning, duration]);
+  }, [isRunning, effectiveDuration, isUnlimited]);
 
   return { timeRemaining, elapsedTime };
 }

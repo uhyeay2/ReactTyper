@@ -1,10 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { TypingState, TypingResults } from "./typingTypes";
+import type { TypingState, TypingResults, WpmSnapshot } from "./typingTypes";
 import { getTargetText } from "../utils/wordList";
 
 const DEFAULT_WORD_COUNT = 50;
 
 const initialState: TypingState = {
+  view: "home",
   status: "idle",
   targetText: getTargetText(DEFAULT_WORD_COUNT),
   typedText: "",
@@ -18,14 +19,38 @@ const initialState: TypingState = {
   wordCount: DEFAULT_WORD_COUNT,
   fixedChars: "",
   pausedElapsed: 0,
+  wpmHistory: [],
 };
 
 const typingSlice = createSlice({
   name: "typing",
   initialState,
   reducers: {
+    navigateHome() {
+      return { ...initialState };
+    },
+    startFromHome(
+      state,
+      action: PayloadAction<{ wordCount: number }>,
+    ) {
+      const wc = action.payload.wordCount;
+      state.view = "test";
+      state.status = "ready";
+      state.targetText = getTargetText(wc);
+      state.typedText = "";
+      state.currentIndex = 0;
+      state.errors = 0;
+      state.correctChars = 0;
+      state.totalTyped = 0;
+      state.startTime = null;
+      state.elapsedTime = 0;
+      state.results = null;
+      state.wordCount = wc;
+      state.fixedChars = "";
+      state.pausedElapsed = 0;
+      state.wpmHistory = [];
+    },
     readyTest(state) {
-      if (state.status !== "idle") return;
       state.status = "ready";
     },
     startReadyTest(state) {
@@ -37,12 +62,22 @@ const typingSlice = createSlice({
       const wordCount = action.payload ?? state.wordCount;
       return {
         ...initialState,
+        view: "test",
         status: "active",
         targetText: getTargetText(wordCount),
         wordCount,
         startTime: Date.now(),
         fixedChars: "",
       };
+    },
+    recordWpmSnapshot(state, action: PayloadAction<WpmSnapshot>) {
+      const last = state.wpmHistory[state.wpmHistory.length - 1];
+      if (last && last.second === action.payload.second) {
+        last.totalTyped = action.payload.totalTyped;
+        last.errors = action.payload.errors;
+        return;
+      }
+      state.wpmHistory.push(action.payload);
     },
     updateTypedText(
       state,
@@ -102,11 +137,13 @@ const typingSlice = createSlice({
       state.results = null;
       state.fixedChars = "";
       state.pausedElapsed = 0;
+      state.wpmHistory = [];
     },
     refreshTest(state) {
       const wordCount = state.wordCount;
       return {
         ...initialState,
+        view: "test",
         status: "ready",
         targetText: getTargetText(wordCount),
         wordCount,
@@ -116,6 +153,8 @@ const typingSlice = createSlice({
 });
 
 export const {
+  navigateHome,
+  startFromHome,
   readyTest,
   startReadyTest,
   startTest,
@@ -125,10 +164,13 @@ export const {
   pauseTest,
   resumeTest,
   completeTest,
+  recordWpmSnapshot,
   resetToReady,
   refreshTest,
 } = typingSlice.actions;
 
+export const selectView = (state: { typing: TypingState }) =>
+  state.typing.view;
 export const selectTypingStatus = (state: { typing: TypingState }) =>
   state.typing.status;
 export const selectTargetText = (state: { typing: TypingState }) =>
@@ -153,6 +195,8 @@ export const selectFixedChars = (state: { typing: TypingState }) =>
   state.typing.fixedChars;
 export const selectPausedElapsed = (state: { typing: TypingState }) =>
   state.typing.pausedElapsed;
+export const selectWpmHistory = (state: { typing: TypingState }) =>
+  state.typing.wpmHistory;
 
 export const selectFinalErrors = (state: { typing: TypingState }) => {
   const { targetText, typedText } = state.typing;

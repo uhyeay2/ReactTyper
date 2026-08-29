@@ -84,3 +84,21 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+.configSection {
+  width: 100%;
+  max-width: 720px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.configTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 16px 0;
+}

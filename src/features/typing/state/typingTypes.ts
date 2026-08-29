@@ -1,5 +1,7 @@
 export type TestStatus = "idle" | "ready" | "active" | "paused" | "completed";
 
+export type ViewType = "home" | "test";
+
 export type CharState = "pending" | "correct" | "fixed" | "incorrect" | "current";
 
 export interface TypingResults {
@@ -11,7 +13,14 @@ export interface TypingResults {
   elapsedTime: number;
 }
 
+export interface WpmSnapshot {
+  second: number;
+  totalTyped: number;
+  errors: number;
+}
+
 export interface TypingState {
+  view: ViewType;
   status: TestStatus;
   targetText: string;
   typedText: string;
@@ -25,4 +34,5 @@ export interface TypingState {
   wordCount: number;
   fixedChars: string;
   pausedElapsed: number;
+  wpmHistory: WpmSnapshot[];
 }

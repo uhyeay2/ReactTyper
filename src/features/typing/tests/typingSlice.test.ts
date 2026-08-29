@@ -7,13 +7,22 @@ import typingReducer, {
   refreshTest,
   readyTest,
   startReadyTest,
+  navigateHome,
+  startFromHome,
+  recordWpmSnapshot,
   selectTypingStatus,
   selectTargetText,
   selectResults,
+  selectView,
+  selectWpmHistory,
+  pauseTest,
+  resumeTest,
+  selectFinalErrors,
 } from "../state/typingSlice";
 import type { TypingState } from "../state/typingTypes";
 
 const initialState: TypingState = {
+  view: "home",
   status: "idle",
   targetText: "",
   typedText: "",
@@ -27,6 +36,7 @@ const initialState: TypingState = {
   wordCount: 50,
   fixedChars: "",
   pausedElapsed: 0,
+  wpmHistory: [],
 };
 
 describe("typingSlice", () => {
@@ -56,7 +66,7 @@ describe("typingSlice", () => {
         { ...initialState, status: "active" },
         readyTest(),
       );
-      expect(state.status).toBe("active");
+      expect(state.status).toBe("ready");
     });
   });
 
@@ -177,6 +187,208 @@ describe("typingSlice", () => {
       };
       const state = { typing: { ...initialState, results } };
       expect(selectResults(state)).toEqual(results);
+    });
+
+    it("selectView returns view", () => {
+      const state = { typing: { ...initialState, view: "test" as const } };
+      expect(selectView(state)).toBe("test");
+    });
+  });
+
+  describe("navigateHome", () => {
+    it("resets to home view with idle status", () => {
+      const state = typingReducer(
+        {
+          ...initialState,
+          view: "test",
+          status: "active",
+          typedText: "hello",
+          currentIndex: 5,
+        },
+        navigateHome(),
+      );
+      expect(state.view).toBe("home");
+      expect(state.status).toBe("idle");
+      expect(state.typedText).toBe("");
+      expect(state.currentIndex).toBe(0);
+    });
+  });
+
+  describe("startFromHome", () => {
+    it("sets view to test and generates target text", () => {
+      const state = typingReducer(
+        initialState,
+        startFromHome({ wordCount: 10 }),
+      );
+      expect(state.view).toBe("test");
+      expect(state.status).toBe("ready");
+      const words = state.targetText.split(" ");
+      expect(words.length).toBe(10);
+      expect(state.wordCount).toBe(10);
+    });
+
+    it("resets all test state", () => {
+      const state = typingReducer(
+        {
+          ...initialState,
+          view: "test",
+          status: "completed",
+          typedText: "something",
+          currentIndex: 9,
+          results: {
+            wpm: 50,
+            grossWpm: 55,
+            accuracy: 90,
+            correctChars: 100,
+            incorrectChars: 5,
+            elapsedTime: 60,
+          },
+        },
+        startFromHome({ wordCount: 25 }),
+      );
+      expect(state.view).toBe("test");
+      expect(state.status).toBe("ready");
+      expect(state.typedText).toBe("");
+      expect(state.currentIndex).toBe(0);
+      expect(state.results).toBeNull();
+    });
+  });
+
+  describe("recordWpmSnapshot", () => {
+    it("appends a new snapshot", () => {
+      const state = typingReducer(
+        initialState,
+        recordWpmSnapshot({ second: 1, totalTyped: 5, errors: 0 }),
+      );
+      expect(state.wpmHistory).toEqual([
+        { second: 1, totalTyped: 5, errors: 0 },
+      ]);
+    });
+
+    it("updates the snapshot for the same second", () => {
+      let state = typingReducer(
+        initialState,
+        recordWpmSnapshot({ second: 1, totalTyped: 5, errors: 0 }),
+      );
+      state = typingReducer(
+        state,
+        recordWpmSnapshot({ second: 1, totalTyped: 8, errors: 0 }),
+      );
+      expect(state.wpmHistory).toEqual([
+        { second: 1, totalTyped: 8, errors: 0 },
+      ]);
+    });
+
+    it("appends distinct seconds in order", () => {
+      let state = typingReducer(
+        initialState,
+        recordWpmSnapshot({ second: 1, totalTyped: 5, errors: 0 }),
+      );
+      state = typingReducer(
+        state,
+        recordWpmSnapshot({ second: 2, totalTyped: 11, errors: 0 }),
+      );
+      state = typingReducer(
+        state,
+        recordWpmSnapshot({ second: 3, totalTyped: 18, errors: 0 }),
+      );
+      expect(state.wpmHistory).toEqual([
+        { second: 1, totalTyped: 5, errors: 0 },
+        { second: 2, totalTyped: 11, errors: 0 },
+        { second: 3, totalTyped: 18, errors: 0 },
+      ]);
+    });
+  });
+
+  describe("wpmHistory reset", () => {
+    it("startFromHome resets wpmHistory", () => {
+      const state = typingReducer(
+        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        startFromHome({ wordCount: 10 }),
+      );
+      expect(state.wpmHistory).toEqual([]);
+    });
+
+    it("navigateHome resets wpmHistory", () => {
+      const state = typingReducer(
+        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        navigateHome(),
+      );
+      expect(state.wpmHistory).toEqual([]);
+    });
+
+    it("resetToReady resets wpmHistory", () => {
+      const state = typingReducer(
+        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        resetToReady(),
+      );
+      expect(state.wpmHistory).toEqual([]);
+    });
+
+    it("refreshTest resets wpmHistory", () => {
+      const state = typingReducer(
+        { ...initialState, wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }] },
+        refreshTest(),
+      );
+      expect(state.wpmHistory).toEqual([]);
+    });
+  });
+
+  describe("selectWpmHistory", () => {
+    it("returns wpmHistory", () => {
+      const history = [{ second: 1, totalTyped: 5, errors: 0 }];
+      const state = { typing: { ...initialState, wpmHistory: history } };
+      expect(selectWpmHistory(state)).toEqual(history);
+    });
+  });
+
+  describe("pauseTest / resumeTest guards", () => {
+    it("pauseTest does nothing when not active", () => {
+      const state = typingReducer(initialState, pauseTest());
+      expect(state.status).toBe("idle");
+    });
+
+    it("resumeTest does nothing when not paused", () => {
+      const state = typingReducer(
+        { ...initialState, status: "active" as const },
+        resumeTest(),
+      );
+      expect(state.status).toBe("active");
+    });
+  });
+
+  describe("startTest", () => {
+    it("uses existing word count when no payload is provided", () => {
+      const state = typingReducer(
+        { ...initialState, wordCount: 10 },
+        startTest(),
+      );
+      expect(state.wordCount).toBe(10);
+      const words = state.targetText.split(" ");
+      expect(words.length).toBe(10);
+    });
+  });
+
+  describe("selectFinalErrors", () => {
+    it("returns 0 when there are matching characters", () => {
+      const state = {
+        typing: { ...initialState, typedText: "hello", targetText: "hello" },
+      };
+      expect(selectFinalErrors(state)).toBe(0);
+    });
+
+    it("counts characters that differ from the target", () => {
+      const state = {
+        typing: { ...initialState, typedText: "hxllo", targetText: "hello" },
+      };
+      expect(selectFinalErrors(state)).toBe(1);
+    });
+
+    it("ignores typed text beyond target length", () => {
+      const state = {
+        typing: { ...initialState, typedText: "hello!!!", targetText: "hello" },
+      };
+      expect(selectFinalErrors(state)).toBe(0);
     });
   });
 });

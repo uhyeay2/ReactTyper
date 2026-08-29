@@ -1,0 +1,56 @@
+.scrollWrapper {
+  max-height: 264px;
+  overflow-y: auto;
+  max-width: 720px;
+  width: 100%;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.display {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 18px;
+  line-height: 1.8;
+  padding: 24px;
+  user-select: none;
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+}
+
+.word {
+  white-space: nowrap;
+}
+
+.char {
+  position: relative;
+}
+
+.space {
+  white-space: pre;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 16px;
+  text-align: center;
+}
+
+.pending {
+  color: var(--text-muted);
+}
+
+.correct {
+  color: var(--correct);
+}
+
+.fixed {
+  color: var(--fixed);
+}
+
+.incorrect {
+  color: var(--error);
+  text-decoration: underline;
+  text-decoration-color: var(--error);
+}
