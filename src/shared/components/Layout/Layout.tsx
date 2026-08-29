@@ -33,9 +33,6 @@ export function Layout({ children }: LayoutProps) {
         <ThemeToggle />
       </header>
       <main className={styles.main}>{children}</main>
-      <footer className={styles.footer}>
-        ReactTyper &mdash; Built with React &amp; TypeScript
-      </footer>
     </div>
   );
 }

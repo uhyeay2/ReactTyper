@@ -47,14 +47,14 @@ describe("Layout", () => {
     localStorage.clear();
   });
 
-  it("renders children, theme toggle, and footer", () => {
+  it("renders children and theme toggle", () => {
     installMatchMedia();
     const store = createStore();
     renderLayout(store);
 
     expect(screen.getByText("Page Content")).toBeInTheDocument();
-    expect(screen.getByText(/Built with React.*TypeScript/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ReactTyper/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Built with React.*TypeScript/i)).not.toBeInTheDocument();
   });
 
   it("renders the dark mode toggle button", () => {
