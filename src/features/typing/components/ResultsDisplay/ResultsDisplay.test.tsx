@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { TypingResults } from "../../state/typingTypes";
 import { ResultsDisplay } from "./ResultsDisplay";
 
@@ -21,7 +21,7 @@ describe("ResultsDisplay", () => {
         typedText="hello"
         currentIndex={5}
         fixedChars=""
-        wpmTimeline={[{ second: 1, wpm: 60 }]}
+        wpmTimeline={[{ second: 1, wpm: 60, words: [] }]}
       />,
     );
 
@@ -73,7 +73,7 @@ describe("ResultsDisplay", () => {
         typedText="hello"
         currentIndex={5}
         fixedChars=""
-        wpmTimeline={[{ second: 1, wpm: 60 }]}
+        wpmTimeline={[{ second: 1, wpm: 60, words: [] }]}
       />,
     );
 
@@ -81,7 +81,7 @@ describe("ResultsDisplay", () => {
     expect(screen.getByLabelText("WPM over time graph")).toBeInTheDocument();
   });
 
-  it("renders per-word WPM from the results word states", () => {
+  it("renders per-word WPM labels matching the word states", () => {
     render(
       <ResultsDisplay
         results={{
@@ -91,7 +91,8 @@ describe("ResultsDisplay", () => {
               wordText: "hello",
               startCharIndex: 0,
               endCharIndex: 4,
-              wordWpm: 42,
+              second: 1,
+              wpm: 42,
             },
           ],
         }}
@@ -103,6 +104,8 @@ describe("ResultsDisplay", () => {
       />,
     );
 
-    expect(screen.getByText("42 wpm")).toBeInTheDocument();
+    expect(screen.getByText("Your Typed Words")).toBeInTheDocument();
+    const review = screen.getByLabelText("Typed test text review");
+    expect(within(review).getByText("42 WPM")).toBeInTheDocument();
   });
 });

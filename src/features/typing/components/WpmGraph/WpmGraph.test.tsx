@@ -7,6 +7,7 @@ const sampleTimeline: WpmTimelinePoint[] = Array.from(
   (_, i) => ({
     second: i + 1,
     wpm: 60,
+    words: [],
   }),
 );
 
@@ -101,9 +102,9 @@ describe("WpmGraph", () => {
     const timeline = Array.from({ length: 12 }, (_, i) => ({
       second: i + 1,
       wpm: 60,
+      words: [],
     }));
     render(<WpmGraph wpmTimeline={timeline} />);
-
     fireEvent.click(screen.getByLabelText("Zoom in"));
     fireEvent.click(screen.getByLabelText("Zoom in"));
 
@@ -182,6 +183,19 @@ describe("WpmGraph", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the second, speed, and words typed in the tooltip", () => {
+    const timeline: WpmTimelinePoint[] = [
+      { second: 3, wpm: 72, words: ["alpha", "beta"] },
+    ];
+    render(<WpmGraph wpmTimeline={timeline} />);
+
+    fireEvent.pointerEnter(Array.from(document.querySelectorAll("circle"))[0]!);
+
+    expect(screen.getByText("Second 3")).toBeInTheDocument();
+    expect(screen.getByText("72 WPM")).toBeInTheDocument();
+    expect(screen.getByText("alpha, beta")).toBeInTheDocument();
+  });
+
   it("snaps the tooltip to the nearest vertical line on pointer move", () => {
     render(<WpmGraph wpmTimeline={sampleTimeline} />);
     const graph = document.querySelector('[aria-label="WPM over time graph"]');
@@ -206,7 +220,7 @@ describe("WpmGraph", () => {
 
     const longerTimeline: WpmTimelinePoint[] = Array.from(
       { length: 12 },
-      (_, i) => ({ second: i + 1, wpm: 144 }),
+      (_, i) => ({ second: i + 1, wpm: 144, words: [] }),
     );
     rerender(<WpmGraph wpmTimeline={longerTimeline} />);
 

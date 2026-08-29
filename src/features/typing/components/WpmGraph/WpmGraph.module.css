@@ -122,6 +122,14 @@
   font-weight: 600;
 }
 
+.tooltipWords {
+  max-width: 200px;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: left;
+  white-space: normal;
+}
+
 .empty {
   max-width: 720px;
   width: 100%;

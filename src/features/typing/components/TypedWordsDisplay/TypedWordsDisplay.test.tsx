@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import type { WordState } from "../../metrics/wpm";
 import { TypedWordsDisplay } from "./TypedWordsDisplay";
 
 function renderDisplay(props: {
@@ -6,8 +7,9 @@ function renderDisplay(props: {
   typedText: string;
   currentIndex: number;
   fixedChars: string;
+  wordStates?: WordState[];
 }) {
-  render(<TypedWordsDisplay {...props} />);
+  render(<TypedWordsDisplay {...props} wordStates={props.wordStates ?? []} />);
 }
 
 function getChars(): HTMLElement[] {
@@ -122,63 +124,52 @@ describe("TypedWordsDisplay", () => {
     expect(chars[0]!.textContent).toBe("h");
   });
 
-  it("renders per-word WPM under each word when word states are provided", () => {
-    render(
-      <TypedWordsDisplay
-        targetText="hello world"
-        typedText="hello world"
-        currentIndex={11}
-        fixedChars=""
-        wordStates={[
-          {
-            wordText: "hello",
-            startCharIndex: 0,
-            endCharIndex: 4,
-            wordWpm: 42,
-          },
-          {
-            wordText: "world",
-            startCharIndex: 6,
-            endCharIndex: 10,
-            wordWpm: 57,
-          },
-        ]}
-      />,
-    );
-
-    expect(screen.getByText("42 wpm")).toBeInTheDocument();
-    expect(screen.getByText("57 wpm")).toBeInTheDocument();
-  });
-
-  it("renders a placeholder for words without a measurable WPM", () => {
-    render(
-      <TypedWordsDisplay
-        targetText="hello"
-        typedText="hello"
-        currentIndex={5}
-        fixedChars=""
-        wordStates={[
-          {
-            wordText: "hello",
-            startCharIndex: 0,
-            endCharIndex: 4,
-            wordWpm: null,
-          },
-        ]}
-      />,
-    );
-
-    expect(screen.getByText("\u2013")).toBeInTheDocument();
-  });
-
-  it("renders no WPM labels when word states are not provided", () => {
+  it("renders the graph-matching WPM label under each word", () => {
     renderDisplay({
       targetText: "hello world",
       typedText: "hello world",
       currentIndex: 11,
       fixedChars: "",
+      wordStates: [
+        {
+          wordText: "hello",
+          startCharIndex: 0,
+          endCharIndex: 4,
+          second: 2,
+          wpm: 42,
+        },
+        {
+          wordText: "world",
+          startCharIndex: 6,
+          endCharIndex: 10,
+          second: 5,
+          wpm: 55,
+        },
+      ],
     });
 
-    expect(screen.queryByText(/wpm$/)).toBeNull();
+    expect(screen.getByText("42 WPM")).toBeInTheDocument();
+    expect(screen.getByText("55 WPM")).toBeInTheDocument();
+  });
+
+  it("omits the WPM label when a word has no matching state", () => {
+    renderDisplay({
+      targetText: "hello world",
+      typedText: "hello world",
+      currentIndex: 11,
+      fixedChars: "",
+      wordStates: [
+        {
+          wordText: "hello",
+          startCharIndex: 0,
+          endCharIndex: 4,
+          second: 2,
+          wpm: 42,
+        },
+      ],
+    });
+
+    expect(screen.getByText("42 WPM")).toBeInTheDocument();
+    expect(screen.queryByText("55 WPM")).toBeNull();
   });
 });

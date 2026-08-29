@@ -383,8 +383,13 @@ export function WpmGraph({ wpmTimeline }: WpmGraphProps) {
             top: Math.max(yPosition(hovered.wpm) - 44, 0),
           }}
         >
-          <span className={styles.tooltipSecond}>{hovered.second}s</span>
+          <span className={styles.tooltipSecond}>Second {hovered.second}</span>
           <span className={styles.tooltipWpm}>{hovered.wpm} WPM</span>
+          {hovered.words.length > 0 && (
+            <span className={styles.tooltipWords}>
+              {hovered.words.join(", ")}
+            </span>
+          )}
         </div>
       )}
     </div>

@@ -11,6 +11,7 @@ import {
   completeTest,
   setElapsedTime,
   recordWpmSnapshot,
+  recordLiveWpm,
   pauseTest,
   resumeTest,
   selectTypingStatus,
@@ -30,7 +31,7 @@ import {
   selectCurrentWpm,
   selectCurrentAccuracy,
 } from "../state/typingSelectors";
-import { computeWpmTimeline, buildWordStates } from "../metrics/wpm";
+import { buildWordStates, attachWordsToTimeline } from "../metrics/wpm";
 import {
   selectDuration,
   selectWordCount,
@@ -147,6 +148,7 @@ export function useTypingTest() {
       elapsedTime: finalElapsed,
       fixedChars: finalFixedChars,
       keystrokes: finalKeystrokes,
+      wpmTimeline: recordedTimeline,
     } = typingStore.getState().typing;
 
     let finalErrs = 0;
@@ -166,8 +168,12 @@ export function useTypingTest() {
       finalFixedChars,
     );
 
-    const wpmTimeline = computeWpmTimeline(finalKeystrokes);
-    const wordStates = buildWordStates(finalTyped, finalKeystrokes);
+    const wordStates = buildWordStates(
+      finalTyped,
+      finalKeystrokes,
+      recordedTimeline,
+    );
+    const wpmTimeline = attachWordsToTimeline(recordedTimeline, wordStates);
 
     dispatch(
       completeTest({
@@ -190,6 +196,12 @@ export function useTypingTest() {
       dispatch(setElapsedTime(elapsedSeconds));
       if (elapsedSeconds <= 0) return;
       const typing = typingStore.getState().typing;
+      dispatch(
+        recordLiveWpm({
+          second: elapsedSeconds,
+          wpm: Math.round(typing.liveWpm),
+        }),
+      );
       if (typing.totalTyped < MIN_CHARS_FOR_WPM) return;
       dispatch(
         recordWpmSnapshot({
@@ -386,6 +398,7 @@ export function useTypingTest() {
       elapsedTime: finalElapsed,
       fixedChars: finalFixedChars,
       keystrokes: finalKeystrokes,
+      wpmTimeline: recordedTimeline,
     } = typingStore.getState().typing;
 
     let finalErrs = 0;
@@ -411,8 +424,12 @@ export function useTypingTest() {
       finalFixedChars,
     );
 
-    const wpmTimeline = computeWpmTimeline(finalKeystrokes);
-    const wordStates = buildWordStates(finalTyped, finalKeystrokes);
+    const wordStates = buildWordStates(
+      finalTyped,
+      finalKeystrokes,
+      recordedTimeline,
+    );
+    const wpmTimeline = attachWordsToTimeline(recordedTimeline, wordStates);
 
     dispatch(
       completeTest({

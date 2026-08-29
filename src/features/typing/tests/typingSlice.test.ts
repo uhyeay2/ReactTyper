@@ -11,6 +11,7 @@ import typingReducer, {
   navigateHome,
   startFromHome,
   recordWpmSnapshot,
+  recordLiveWpm,
   selectTypingStatus,
   selectTargetText,
   selectResults,
@@ -127,11 +128,16 @@ describe("typingSlice", () => {
       };
       const state = typingReducer(
         { ...initialState, status: "active" },
-        completeTest({ results, wpmTimeline: [{ second: 1, wpm: 60 }] }),
+        completeTest({
+          results,
+          wpmTimeline: [{ second: 1, wpm: 60, words: ["hello"] }],
+        }),
       );
       expect(state.status).toBe("completed");
       expect(state.results).toEqual(results);
-      expect(state.wpmTimeline).toEqual([{ second: 1, wpm: 60 }]);
+      expect(state.wpmTimeline).toEqual([
+        { second: 1, wpm: 60, words: ["hello"] },
+      ]);
     });
   });
 
@@ -428,6 +434,37 @@ describe("typingSlice", () => {
     });
   });
 
+  describe("recordLiveWpm", () => {
+    it("appends a new timeline point", () => {
+      const state = typingReducer(
+        initialState,
+        recordLiveWpm({ second: 1, wpm: 45 }),
+      );
+      expect(state.wpmTimeline).toEqual([{ second: 1, wpm: 45, words: [] }]);
+    });
+
+    it("updates the WPM for the same second", () => {
+      let state = typingReducer(
+        initialState,
+        recordLiveWpm({ second: 1, wpm: 45 }),
+      );
+      state = typingReducer(state, recordLiveWpm({ second: 1, wpm: 52 }));
+      expect(state.wpmTimeline).toEqual([{ second: 1, wpm: 52, words: [] }]);
+    });
+
+    it("appends distinct seconds in order", () => {
+      let state = typingReducer(
+        initialState,
+        recordLiveWpm({ second: 1, wpm: 45 }),
+      );
+      state = typingReducer(state, recordLiveWpm({ second: 2, wpm: 51 }));
+      expect(state.wpmTimeline).toEqual([
+        { second: 1, wpm: 45, words: [] },
+        { second: 2, wpm: 51, words: [] },
+      ]);
+    });
+  });
+
   describe("wpmHistory reset", () => {
     it("startFromHome resets wpmHistory", () => {
       const state = typingReducer(
@@ -489,7 +526,7 @@ describe("typingSlice", () => {
     });
 
     it("selectWpmTimeline returns the chart timeline", () => {
-      const timeline = [{ second: 1, wpm: 60 }];
+      const timeline = [{ second: 1, wpm: 60, words: [] }];
       const state = { typing: { ...initialState, wpmTimeline: timeline } };
       expect(selectWpmTimeline(state)).toEqual(timeline);
     });
@@ -508,7 +545,7 @@ describe("typingSlice", () => {
           ...initialState,
           keystrokes: [{ timestamp: 1, charIndex: 0 }],
           liveWpm: 55,
-          wpmTimeline: [{ second: 1, wpm: 60 }],
+          wpmTimeline: [{ second: 1, wpm: 60, words: [] }],
         },
         startFromHome({ wordCount: 10 }),
       );
@@ -523,7 +560,7 @@ describe("typingSlice", () => {
           ...initialState,
           keystrokes: [{ timestamp: 1, charIndex: 0 }],
           liveWpm: 55,
-          wpmTimeline: [{ second: 1, wpm: 60 }],
+          wpmTimeline: [{ second: 1, wpm: 60, words: [] }],
         },
         resetToReady(),
       );

@@ -411,7 +411,10 @@ describe("useTypingTest", () => {
     renderInTestView(store);
 
     const words = store.getState().typing.targetText.split(" ");
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime,
+      delay: 250,
+    });
     const input = screen.getByTestId("input");
 
     await act(async () => {
@@ -419,8 +422,37 @@ describe("useTypingTest", () => {
     });
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
-    const timeline = store.getState().typing.wpmTimeline;
-    expect(Array.isArray(timeline)).toBe(true);
-    expect(timeline.length).toBeGreaterThan(0);
+    const state = store.getState().typing;
+    expect(state.wpmTimeline.length).toBeGreaterThan(0);
+    expect(state.results?.wordStates.length).toBeGreaterThan(0);
+  });
+
+  it("keeps word states aligned with the completed graph timeline", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setWordCount", payload: 2 });
+    store.dispatch({ type: "typingConfig/setDuration", payload: null });
+    store.dispatch({ type: "typingConfig/setMaxErrors", payload: null });
+    renderInTestView(store);
+
+    const words = store.getState().typing.targetText.split(" ");
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime,
+      delay: 250,
+    });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, `${words[0]} ${words[1]} `);
+    });
+
+    const { wpmTimeline, results } = store.getState().typing;
+    expect(wpmTimeline.length).toBeGreaterThan(0);
+    const states = results?.wordStates ?? [];
+    expect(states.length).toBeGreaterThan(0);
+    for (const state of states) {
+      const point = wpmTimeline.find((p) => p.second === state.second);
+      expect(point).toBeDefined();
+      expect(state.wpm).toBe(point!.wpm);
+    }
   });
 });

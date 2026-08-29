@@ -16,24 +16,6 @@ export const MIN_LIVE_WINDOW_SECONDS = 2;
 /** EMA smoothing factor for the live WPM feed. */
 export const LIVE_WPM_ALPHA = 0.2;
 
-/** Post-test timeline bucket duration in milliseconds. */
-export const TIMELINE_BUCKET_MS = 1000;
-
-/** Minimum characters a timeline bucket needs to be considered meaningful. */
-export const MIN_TIMELINE_CHARS = 5;
-
-/** EMA smoothing factor applied across post-test timeline buckets. */
-export const TIMELINE_ALPHA = 0.2;
-
-/** Words shorter than this duration (ms) yield no per-word WPM. */
-export const WORD_MIN_DURATION_MS = 1000;
-
-/** Inter-keystroke gap (ms) inside a word that counts as a mid-word pause. */
-export const WORD_PAUSE_THRESHOLD_MS = 1500;
-
-/** EMA smoothing factor applied across adjacent per-word values. */
-export const WORD_WPM_ALPHA = 0.25;
-
 /** A single captured keystroke with a high-precision timestamp. */
 export interface Keystroke {
   /** Monotonic high-precision timestamp (performance.now() domain). */
@@ -42,10 +24,18 @@ export interface Keystroke {
   charIndex: number;
 }
 
-/** A single point of the post-test WPM timeline, ready for charting. */
+/**
+ * A single point of the live WPM timeline, ready for charting. Each point
+ * represents the WPM that was displayed during the corresponding second of the
+ * test, plus the words attributed to that second.
+ */
 export interface WpmTimelinePoint {
+  /** 1-based second of the test this point represents. */
   second: number;
+  /** Rounded WPM displayed at that second. */
   wpm: number;
+  /** Words whose completion falls within this second. */
+  words: string[];
 }
 
 /** Character range occupied by a typed word in the full typed text. */
@@ -55,12 +45,19 @@ export interface WordRange {
   endCharIndex: number;
 }
 
-/** Per-word metric surfaced in the results screen. */
+/**
+ * Per-word metric surfaced in the results. Each word carries the second it was
+ * completed in and the WPM of that second, keeping words aligned with the live
+ * graph timeline.
+ */
 export interface WordState {
   wordText: string;
   startCharIndex: number;
   endCharIndex: number;
-  wordWpm: number | null;
+  /** 1-based second the word completed in, relative to the first keystroke. */
+  second: number;
+  /** WPM of the graph point matching `second`. */
+  wpm: number;
 }
 
 /**
@@ -131,120 +128,11 @@ export function computeLiveWpm(
 }
 
 /**
- * Splits keystrokes into one-second buckets and derives a smoothed WPM
- * timeline for the results graph.
- *
- * Only the first keystroke is used as the timeline origin, so buckets are
- * relative to typing activity rather than wall-clock start. Buckets with fewer
- * than `MIN_TIMELINE_CHARS` characters are ignored, and the EMA state is
- * preserved across ignored buckets. Points are labeled with a 1-based second.
+ * Splits the typed text into the ordered list of typed words, skipping empty
+ * tokens produced by trailing spaces. Each range maps to the character span of
+ * the word within the full typed text.
  */
-export function computeWpmTimeline(
-  keystrokes: Keystroke[],
-): WpmTimelinePoint[] {
-  if (keystrokes.length === 0) return [];
-
-  const firstTimestamp = keystrokes[0]!.timestamp;
-  const bucketCounts: number[] = [];
-
-  for (const keystroke of keystrokes) {
-    const bucketIndex = Math.floor(
-      (keystroke.timestamp - firstTimestamp) / TIMELINE_BUCKET_MS,
-    );
-    bucketCounts[bucketIndex] = (bucketCounts[bucketIndex] ?? 0) + 1;
-  }
-
-  let ema: number | null = null;
-  const points: WpmTimelinePoint[] = [];
-
-  for (let index = 0; index < bucketCounts.length; index++) {
-    const count = bucketCounts[index] ?? 0;
-    if (count < MIN_TIMELINE_CHARS) continue;
-
-    const rawWpm = toWpm(count, TIMELINE_BUCKET_MS);
-    ema =
-      ema === null
-        ? rawWpm
-        : TIMELINE_ALPHA * rawWpm + (1 - TIMELINE_ALPHA) * ema;
-
-    points.push({ second: index + 1, wpm: Math.round(ema) });
-  }
-
-  return points;
-}
-
-/**
- * Computes the effective "active" duration of a word by subtracting every
- * mid-word pause longer than `WORD_PAUSE_THRESHOLD_MS`. A word split by a
- * pause therefore reports the WPM of its active segments.
- */
-function activeWordDuration(keystrokes: Keystroke[]): number {
-  const firstTimestamp = keystrokes[0]!.timestamp;
-  const lastTimestamp = keystrokes[keystrokes.length - 1]!.timestamp;
-  let activeDuration = lastTimestamp - firstTimestamp;
-
-  for (let i = 1; i < keystrokes.length; i++) {
-    const gap = keystrokes[i]!.timestamp - keystrokes[i - 1]!.timestamp;
-    if (gap > WORD_PAUSE_THRESHOLD_MS) {
-      activeDuration -= gap;
-    }
-  }
-
-  return Math.max(0, activeDuration);
-}
-
-/**
- * Computes per-word WPM values aligned with the given word ranges.
- *
- * Raw WPM is only computed when the word's full duration is at least
- * `WORD_MIN_DURATION_MS`; short or single-character words resolve to null.
- * Mid-word pauses longer than `WORD_PAUSE_THRESHOLD_MS` are removed so the
- * word reflects its active segments. The final displayed value is then EMA
- * smoothed across adjacent words (`WORD_WPM_ALPHA`); null words do not
- * participate in smoothing and remain null.
- */
-export function computeWordWpms(
-  ranges: WordRange[],
-  keystrokes: Keystroke[],
-): (number | null)[] {
-  let previousSmoothed: number | null = null;
-
-  return ranges.map((range) => {
-    const wordKeystrokes = keystrokes.filter(
-      (keystroke) =>
-        keystroke.charIndex >= range.startCharIndex &&
-        keystroke.charIndex <= range.endCharIndex,
-    );
-    if (wordKeystrokes.length < 2) return null;
-
-    const firstTimestamp = wordKeystrokes[0]!.timestamp;
-    const lastTimestamp = wordKeystrokes[wordKeystrokes.length - 1]!.timestamp;
-    if (lastTimestamp - firstTimestamp < WORD_MIN_DURATION_MS) return null;
-
-    const activeDuration = activeWordDuration(wordKeystrokes);
-    if (activeDuration <= 0) return null;
-
-    const rawWpm = toWpm(
-      range.endCharIndex - range.startCharIndex + 1,
-      activeDuration,
-    );
-    previousSmoothed =
-      previousSmoothed === null
-        ? rawWpm
-        : WORD_WPM_ALPHA * rawWpm + (1 - WORD_WPM_ALPHA) * previousSmoothed;
-
-    return Math.round(previousSmoothed);
-  });
-}
-
-/**
- * Derives the ordered list of typed words (skipping empty tokens produced by
- * trailing spaces) and computes their per-word WPM from the keystroke log.
- */
-export function buildWordStates(
-  typedText: string,
-  keystrokes: Keystroke[],
-): WordState[] {
+function deriveWordRanges(typedText: string): WordRange[] {
   const tokens = typedText.split(" ");
   const ranges: WordRange[] = [];
   let charIndex = 0;
@@ -262,12 +150,92 @@ export function buildWordStates(
     charIndex += token.length + 1;
   }
 
-  const wordWpms = computeWordWpms(ranges, keystrokes);
+  return ranges;
+}
 
-  return ranges.map((range, index) => ({
-    wordText: range.wordText,
-    startCharIndex: range.startCharIndex,
-    endCharIndex: range.endCharIndex,
-    wordWpm: wordWpms[index] ?? null,
+/**
+ * Returns the timeline point whose second is closest to the given second. The
+ * timeline is expected to hold one point per elapsed second; a second without
+ * a matching point falls back to the nearest recorded point.
+ */
+function nearestTimelinePoint(
+  timeline: WpmTimelinePoint[],
+  second: number,
+): WpmTimelinePoint {
+  let nearest = timeline[0]!;
+  let nearestDistance = Math.abs(timeline[0]!.second - second);
+
+  for (const point of timeline) {
+    const distance = Math.abs(point.second - second);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = point;
+    }
+  }
+
+  return nearest;
+}
+
+/**
+ * Attributes every typed word to a second of the live WPM timeline.
+ *
+ * A word belongs to the second in which it was completed, computed relative to
+ * the first keystroke. Each resulting state carries the `wpm` of the timeline
+ * point for that second, so the words and the graph always agree on the value
+ * shown for any interval.
+ *
+ * Returns an empty list when there are no keystrokes or no timeline to align
+ * against.
+ */
+export function buildWordStates(
+  typedText: string,
+  keystrokes: Keystroke[],
+  timeline: WpmTimelinePoint[],
+): WordState[] {
+  if (keystrokes.length === 0 || timeline.length === 0) return [];
+
+  const origin = keystrokes[0]!.timestamp;
+
+  return deriveWordRanges(typedText).map((range) => {
+    let completionTimestamp = origin;
+    for (const keystroke of keystrokes) {
+      if (keystroke.charIndex <= range.endCharIndex) {
+        completionTimestamp = keystroke.timestamp;
+      }
+    }
+
+    const relativeSecond =
+      Math.floor((completionTimestamp - origin) / 1000) + 1;
+    const point = nearestTimelinePoint(timeline, relativeSecond);
+
+    return {
+      wordText: range.wordText,
+      startCharIndex: range.startCharIndex,
+      endCharIndex: range.endCharIndex,
+      second: point.second,
+      wpm: point.wpm,
+    };
+  });
+}
+
+/**
+ * Populates each timeline point with the words that were completed during its
+ * second. Returns a new timeline array; the input is not mutated.
+ */
+export function attachWordsToTimeline(
+  timeline: WpmTimelinePoint[],
+  wordStates: WordState[],
+): WpmTimelinePoint[] {
+  const wordsBySecond = new Map<number, string[]>();
+
+  for (const state of wordStates) {
+    const bucket = wordsBySecond.get(state.second) ?? [];
+    bucket.push(state.wordText);
+    wordsBySecond.set(state.second, bucket);
+  }
+
+  return timeline.map((point) => ({
+    ...point,
+    words: wordsBySecond.get(point.second) ?? [],
   }));
 }

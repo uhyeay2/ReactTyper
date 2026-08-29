@@ -84,6 +84,21 @@ const typingSlice = createSlice({
       }
       state.wpmHistory.push(action.payload);
     },
+    recordLiveWpm(
+      state,
+      action: PayloadAction<{ second: number; wpm: number }>,
+    ) {
+      const last = state.wpmTimeline[state.wpmTimeline.length - 1];
+      if (last && last.second === action.payload.second) {
+        last.wpm = action.payload.wpm;
+        return;
+      }
+      state.wpmTimeline.push({
+        second: action.payload.second,
+        wpm: action.payload.wpm,
+        words: [],
+      });
+    },
     updateTypedText(
       state,
       action: PayloadAction<{
@@ -187,6 +202,7 @@ export const {
   resumeTest,
   completeTest,
   recordWpmSnapshot,
+  recordLiveWpm,
   resetToReady,
   refreshTest,
 } = typingSlice.actions;
