@@ -1,9 +1,6 @@
 .container {
   max-width: 720px;
   width: 100%;
-  border-radius: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
   padding: 16px;
   cursor: grab;
   touch-action: none;
@@ -133,9 +130,6 @@
 .empty {
   max-width: 720px;
   width: 100%;
-  border-radius: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
   color: var(--text-muted);
   padding: 32px;
   text-align: center;

@@ -2,7 +2,12 @@ import type { TypingResults } from "../../state/typingTypes";
 import type { WpmTimelinePoint } from "../../metrics/wpm";
 import { TypedWordsDisplay } from "../TypedWordsDisplay/TypedWordsDisplay";
 import { WpmGraph } from "../WpmGraph/WpmGraph";
+import { CollapsibleSection } from "@/shared/components/CollapsibleSection/CollapsibleSection";
 import styles from "./ResultsDisplay.module.css";
+
+const TYPED_WORDS_STORAGE_KEY = "reacttyper-results-typed-words";
+const WPM_OVER_TIME_STORAGE_KEY = "reacttyper-results-wpm-over-time";
+const EXTRA_DETAILS_STORAGE_KEY = "reacttyper-results-extra-details";
 
 interface ResultsDisplayProps {
   results: TypingResults;
@@ -28,7 +33,7 @@ export function ResultsDisplay({
       <div className={styles.metrics}>
         <div className={styles.metric}>
           <span className={styles.metricValue}>{results.wpm}</span>
-          <span className={styles.metricLabel}>WPM</span>
+          <span className={styles.metricLabel}>Adjusted WPM</span>
         </div>
         <div className={styles.metric}>
           <span className={styles.metricValue}>{results.accuracy}%</span>
@@ -40,27 +45,58 @@ export function ResultsDisplay({
         </div>
       </div>
 
-      <div className={styles.divider} />
-
-      <div className={styles.details}>
-        <div className={styles.detailItem}>
-          <span className={styles.detailLabel}>Correct</span>
-          <span className={styles.detailValue}>{results.correctChars}</span>
+      <CollapsibleSection
+        title="Extra Details"
+        storageKey={EXTRA_DETAILS_STORAGE_KEY}
+        defaultOpen={false}
+      >
+        <div className={styles.details}>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Total Words Typed</span>
+            <span className={styles.detailValue}>{results.totalWordsTyped}</span>
+          </div>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Words With Errors</span>
+            <span className={styles.detailValue}>
+              {results.wordsTypedWithErrors}
+            </span>
+          </div>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Words With Corrections</span>
+            <span className={styles.detailValue}>
+              {results.wordsTypedWithCorrections}
+            </span>
+          </div>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Words Typed Perfectly</span>
+            <span className={styles.detailValue}>
+              {results.wordsTypedPerfectly}
+            </span>
+          </div>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Time Typed</span>
+            <span className={styles.detailValue}>{results.elapsedTime}s</span>
+          </div>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Lowest WPM</span>
+            <span className={styles.detailValue}>{results.lowestWpm}</span>
+          </div>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Highest WPM</span>
+            <span className={styles.detailValue}>{results.highestWpm}</span>
+          </div>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Average WPM</span>
+            <span className={styles.detailValue}>{results.averageWpm}</span>
+          </div>
         </div>
-        <div className={styles.detailItem}>
-          <span className={styles.detailLabel}>Errors</span>
-          <span className={styles.detailValue}>{results.incorrectChars}</span>
-        </div>
-        <div className={styles.detailItem}>
-          <span className={styles.detailLabel}>Time</span>
-          <span className={styles.detailValue}>{results.elapsedTime}s</span>
-        </div>
-      </div>
+      </CollapsibleSection>
 
-      <div className={styles.divider} />
-
-      <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Your Typed Words</h3>
+      <CollapsibleSection
+        title="Your Typed Words"
+        storageKey={TYPED_WORDS_STORAGE_KEY}
+        defaultOpen={false}
+      >
         <TypedWordsDisplay
           targetText={targetText}
           typedText={typedText}
@@ -68,12 +104,15 @@ export function ResultsDisplay({
           fixedChars={fixedChars}
           wordStates={results.wordStates}
         />
-      </section>
+      </CollapsibleSection>
 
-      <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>WPM Over Time</h3>
+      <CollapsibleSection
+        title="WPM Over Time"
+        storageKey={WPM_OVER_TIME_STORAGE_KEY}
+        defaultOpen={true}
+      >
         <WpmGraph wpmTimeline={wpmTimeline} />
-      </section>
+      </CollapsibleSection>
     </div>
   );
 }

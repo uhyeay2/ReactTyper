@@ -163,7 +163,7 @@ export function computeLiveWpm(
  * tokens produced by trailing spaces. Each range maps to the character span of
  * the word within the full typed text.
  */
-function deriveWordRanges(typedText: string): WordRange[] {
+export function deriveWordRanges(typedText: string): WordRange[] {
   const tokens = typedText.split(" ");
   const ranges: WordRange[] = [];
   let charIndex = 0;

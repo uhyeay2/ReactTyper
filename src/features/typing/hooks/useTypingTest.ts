@@ -33,17 +33,12 @@ import {
   selectCurrentAccuracy,
 } from "../state/typingSelectors";
 import {
-  buildWordStates,
-  attachWordsToTimeline,
-  backfillInitialWpm,
-} from "../metrics/wpm";
-import {
   selectDuration,
   selectWordCount,
   selectMaxErrors,
 } from "@/features/typingConfig/state/typingConfigSlice";
-import { calculateGrossWpm, calculateNetWpm } from "../utils/calculateWpm";
-import { calculateAccuracy } from "../utils/calculateAccuracy";
+import { buildResults } from "../utils/buildResults";
+import { countWordsWithErrors } from "../utils/calculateWordStats";
 import { getExtraWords } from "../utils/wordList";
 import { useTimer } from "./useTimer";
 
@@ -51,37 +46,6 @@ const WORD_BUFFER_SIZE = 20;
 const DEFAULT_WORD_COUNT = 50;
 const MIN_CHARS_FOR_WPM = 5;
 const LIVE_WPM_REFRESH_MS = 100;
-
-function countWordsWithErrors(
-  targetText: string,
-  typedText: string,
-  fixedChars: string,
-): number {
-  const targetWords = targetText.split(" ");
-  let charIndex = 0;
-  let wordErrors = 0;
-
-  for (const word of targetWords) {
-    let hasError = false;
-    for (let i = 0; i < word.length; i++) {
-      const ti = charIndex + i;
-      if (ti < typedText.length && ti < targetText.length) {
-        if (typedText[ti] !== targetText[ti]) {
-          hasError = true;
-          break;
-        }
-        if (fixedChars.length > ti && fixedChars[ti] === "1") {
-          hasError = true;
-          break;
-        }
-      }
-    }
-    if (hasError) wordErrors++;
-    charIndex += word.length + 1;
-  }
-
-  return wordErrors;
-}
 
 function countTypedWords(typedText: string): number {
   const trimmed = typedText.trim();
@@ -157,45 +121,18 @@ export function useTypingTest() {
       wpmTimeline: recordedTimeline,
     } = typingStore.getState().typing;
 
-    let finalErrs = 0;
-    for (let i = 0; i < finalTyped.length && i < finalTarget.length; i++) {
-      if (finalTyped[i] !== finalTarget[i]) finalErrs++;
-    }
+    const { results, wpmTimeline } = buildResults({
+      typedText: finalTyped,
+      targetText: finalTarget,
+      totalTyped: finalTotalTyped,
+      correctChars: finalCorrectChars,
+      elapsedTime: finalElapsed,
+      fixedChars: finalFixedChars,
+      keystrokes: finalKeystrokes,
+      recordedTimeline,
+    });
 
-    const elapsed = finalElapsed;
-    const elapsedMinutes = elapsed > 0 ? elapsed / 60 : 1 / 60;
-    const gross = calculateGrossWpm(finalTotalTyped, elapsedMinutes);
-    const net = calculateNetWpm(gross, finalErrs, elapsedMinutes);
-    const acc = calculateAccuracy(finalCorrectChars, finalTotalTyped);
-
-    const wordErrors = countWordsWithErrors(
-      finalTarget,
-      finalTyped,
-      finalFixedChars,
-    );
-
-    const normalizedTimeline = backfillInitialWpm(recordedTimeline);
-    const wordStates = buildWordStates(
-      finalTyped,
-      finalKeystrokes,
-      normalizedTimeline,
-    );
-    const wpmTimeline = attachWordsToTimeline(normalizedTimeline, wordStates);
-
-    dispatch(
-      completeTest({
-        results: {
-          wpm: net,
-          grossWpm: gross,
-          accuracy: acc,
-          correctChars: finalCorrectChars,
-          incorrectChars: wordErrors,
-          elapsedTime: elapsed,
-          wordStates,
-        },
-        wpmTimeline,
-      }),
-    );
+    dispatch(completeTest({ results, wpmTimeline }));
   }, [dispatch, typingStore]);
 
   const handleTick = useCallback(
@@ -414,51 +351,18 @@ export function useTypingTest() {
       wpmTimeline: recordedTimeline,
     } = typingStore.getState().typing;
 
-    let finalErrs = 0;
-    for (let i = 0; i < finalTyped.length && i < finalTarget.length; i++) {
-      if (finalTyped[i] !== finalTarget[i]) finalErrs++;
-    }
+    const { results, wpmTimeline } = buildResults({
+      typedText: finalTyped,
+      targetText: finalTarget,
+      totalTyped: finalTotalTyped,
+      correctChars: finalCorrectChars,
+      elapsedTime: finalElapsed,
+      fixedChars: finalFixedChars,
+      keystrokes: finalKeystrokes,
+      recordedTimeline,
+    });
 
-    const elapsed = finalElapsed;
-    const elapsedMinutes = elapsed > 0 ? elapsed / 60 : 1 / 60;
-    const gross =
-      elapsedMinutes > 0
-        ? calculateGrossWpm(finalTotalTyped, elapsedMinutes)
-        : 0;
-    const net =
-      elapsedMinutes > 0
-        ? calculateNetWpm(gross, finalErrs, elapsedMinutes)
-        : 0;
-    const acc = calculateAccuracy(finalCorrectChars, finalTotalTyped);
-
-    const wordErrors = countWordsWithErrors(
-      finalTarget,
-      finalTyped,
-      finalFixedChars,
-    );
-
-    const normalizedTimeline = backfillInitialWpm(recordedTimeline);
-    const wordStates = buildWordStates(
-      finalTyped,
-      finalKeystrokes,
-      normalizedTimeline,
-    );
-    const wpmTimeline = attachWordsToTimeline(normalizedTimeline, wordStates);
-
-    dispatch(
-      completeTest({
-        results: {
-          wpm: net,
-          grossWpm: gross,
-          accuracy: acc,
-          correctChars: finalCorrectChars,
-          incorrectChars: wordErrors,
-          elapsedTime: elapsed,
-          wordStates,
-        },
-        wpmTimeline,
-      }),
-    );
+    dispatch(completeTest({ results, wpmTimeline }));
   }, [dispatch, typingStore]);
 
   const handleReset = useCallback(() => {

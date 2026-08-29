@@ -14,6 +14,13 @@ export interface TypingResults {
   correctChars: number;
   incorrectChars: number;
   elapsedTime: number;
+  totalWordsTyped: number;
+  wordsTypedWithErrors: number;
+  wordsTypedWithCorrections: number;
+  wordsTypedPerfectly: number;
+  highestWpm: number;
+  lowestWpm: number;
+  averageWpm: number;
   wordStates: WordState[];
 }
 

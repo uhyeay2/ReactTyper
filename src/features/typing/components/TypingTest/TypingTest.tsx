@@ -5,36 +5,18 @@ import {
   selectMaxErrors,
   selectIsZenMode,
 } from "@/features/typingConfig/state/typingConfigSlice";
+import { formatConfigSummary } from "@/features/typingConfig/utils/formatConfigSummary";
 import { useTypingTest } from "../../hooks/useTypingTest";
 import { TypingDisplay } from "../TypingDisplay/TypingDisplay";
 import { TypingInput } from "../TypingInput/TypingInput";
 import { LiveWpm } from "../LiveWpm/LiveWpm";
 import { ResultsDisplay } from "../ResultsDisplay/ResultsDisplay";
 import { TestConfigOptions } from "@/shared/components/TestConfigOptions/TestConfigOptions";
+import { CollapsibleSection } from "@/shared/components/CollapsibleSection/CollapsibleSection";
 import { logger } from "@/infrastructure/logging/logger";
 import styles from "./TypingTest.module.css";
 
-function getSubtitle(
-  isZenMode: boolean,
-  duration: number | null,
-  wordCount: number | null,
-  maxErrors: number | null,
-): string {
-  if (isZenMode) return "Zen Mode \u00b7 No limits";
-
-  const parts: string[] = [];
-  if (duration !== null) {
-    parts.push(`${duration}s`);
-  }
-  if (wordCount !== null) {
-    parts.push(`${wordCount} words`);
-  }
-  if (maxErrors !== null) {
-    parts.push(`${maxErrors} max errors`);
-  }
-
-  return parts.length > 0 ? parts.join(" \u00b7 ") : "Free typing";
-}
+const TEST_SETTINGS_STORAGE_KEY = "reacttyper-results-test-settings";
 
 export function TypingTest() {
   const configDuration = useAppSelector(selectDuration);
@@ -70,7 +52,7 @@ export function TypingTest() {
     status === "ready" || status === "active" || status === "paused";
   const isCompleted = status === "completed";
 
-  const subtitle = getSubtitle(
+  const configSummary = formatConfigSummary(
     isZenMode,
     configDuration,
     configWordCount,
@@ -83,8 +65,48 @@ export function TypingTest() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Type Test</h1>
-        <p className={styles.subtitle}>{subtitle}</p>
       </div>
+
+      {isCompleted && results && (
+        <>
+          <CollapsibleSection
+            title="Test Settings"
+            summary={configSummary}
+            storageKey={TEST_SETTINGS_STORAGE_KEY}
+            defaultOpen={false}
+          >
+            <TestConfigOptions />
+          </CollapsibleSection>
+          <div className={styles.controls}>
+            <button
+              type="button"
+              className={styles.controlBtn}
+              onClick={() => {
+                logger.info("Test restarted", {
+                  wpm: results.wpm,
+                  accuracy: results.accuracy,
+                });
+                handleReset();
+              }}
+            >
+              Try Again
+            </button>
+            <button
+              type="button"
+              className={styles.controlBtn}
+              onClick={() => {
+                logger.info("Test refreshed from results", {
+                  wpm: results.wpm,
+                  accuracy: results.accuracy,
+                });
+                handleRefresh();
+              }}
+            >
+              New Words
+            </button>
+          </div>
+        </>
+      )}
 
       {showDisplay && (
         <div className={styles.statsBar}>
@@ -176,48 +198,14 @@ export function TypingTest() {
       )}
 
       {isCompleted && results && (
-        <>
-          <ResultsDisplay
-            results={results}
-            targetText={targetText}
-            typedText={typedText}
-            currentIndex={currentIndex}
-            fixedChars={fixedChars}
-            wpmTimeline={wpmTimeline}
-          />
-          <div className={styles.configSection}>
-            <h3 className={styles.configTitle}>Test Settings</h3>
-            <TestConfigOptions />
-          </div>
-          <div className={styles.controls}>
-            <button
-              type="button"
-              className={styles.controlBtn}
-              onClick={() => {
-                logger.info("Test restarted", {
-                  wpm: results.wpm,
-                  accuracy: results.accuracy,
-                });
-                handleReset();
-              }}
-            >
-              Try Again
-            </button>
-            <button
-              type="button"
-              className={styles.controlBtn}
-              onClick={() => {
-                logger.info("Test refreshed from results", {
-                  wpm: results.wpm,
-                  accuracy: results.accuracy,
-                });
-                handleRefresh();
-              }}
-            >
-              New Words
-            </button>
-          </div>
-        </>
+        <ResultsDisplay
+          results={results}
+          targetText={targetText}
+          typedText={typedText}
+          currentIndex={currentIndex}
+          fixedChars={fixedChars}
+          wpmTimeline={wpmTimeline}
+        />
       )}
     </div>
   );

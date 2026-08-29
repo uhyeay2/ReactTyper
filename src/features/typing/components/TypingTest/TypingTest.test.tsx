@@ -1,4 +1,4 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
@@ -76,17 +76,13 @@ describe("TypingTest", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    window.localStorage.clear();
   });
 
   it("renders ready state with prompt text", () => {
     renderInTestView();
     expect(screen.getByText("Type Test")).toBeInTheDocument();
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
-  });
-
-  it("shows default subtitle with 60s config", () => {
-    renderInTestView();
-    expect(screen.getAllByText("60s").length).toBeGreaterThanOrEqual(1);
   });
 
   it("hides prompt and shows display and stats bar after first keystroke", async () => {
@@ -258,7 +254,7 @@ describe("TypingTest", () => {
     expect(screen.getByText("Pause")).toBeInTheDocument();
   });
 
-  it("shows Test Settings config below results", async () => {
+  it("shows Test Settings collapsed by default on the results screen", async () => {
     renderInTestView();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
@@ -271,8 +267,100 @@ describe("TypingTest", () => {
       vi.advanceTimersByTime(60_000);
     });
 
-    expect(screen.getByText("Test Settings")).toBeInTheDocument();
+    const settingsButton = screen.getByRole("button", {
+      name: /Test Settings/,
+    });
+    expect(settingsButton).toBeInTheDocument();
+    expect(settingsButton).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Zen Mode")).not.toBeInTheDocument();
+  });
+
+  it("renders Test Settings and actions above the results", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "ab");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    const settingsButton = screen.getByRole("button", {
+      name: /Test Settings/,
+    });
+    const tryAgain = screen.getByText("Try Again");
+    const newWords = screen.getByText("New Words");
+    const heading = screen.getByText("Test Complete");
+
+    const isAbove = (a: HTMLElement, b: HTMLElement): boolean =>
+      (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+
+    expect(isAbove(settingsButton, heading)).toBe(true);
+    expect(isAbove(tryAgain, heading)).toBe(true);
+    expect(isAbove(newWords, heading)).toBe(true);
+  });
+
+  it("expands Test Settings to reveal the config options", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "ab");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Test Settings/ }),
+    );
+
     expect(screen.getByText("Zen Mode")).toBeInTheDocument();
+  });
+
+  it("shows the selected settings summary next to Test Settings", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "ab");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    const settingsButton = screen.getByRole("button", {
+      name: /Test Settings/,
+    });
+    expect(settingsButton).toHaveTextContent("1m Time Limit");
+  });
+
+  it("shows the zen mode summary next to Test Settings", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setZenMode", payload: true });
+    renderInTestView(store);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "ab");
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByText("Quit"));
+    });
+
+    const settingsButton = screen.getByRole("button", {
+      name: /Test Settings/,
+    });
+    expect(settingsButton).toHaveTextContent("Zen Mode");
   });
 
   it("navigates home when logo is clicked", async () => {
@@ -283,90 +371,6 @@ describe("TypingTest", () => {
     await user.click(logo);
 
     expect(store.getState().typing.view).toBe("home");
-  });
-
-  it("shows Zen Mode subtitle when zen mode is active", () => {
-    const store = createTestStore();
-    store.dispatch({
-      type: "typingConfig/setZenMode",
-      payload: true,
-    });
-    store.dispatch(startFromHome({ wordCount: 50 }));
-
-    renderWithLayoutAndTheme(store);
-
-    expect(screen.getByText(/Zen Mode/)).toBeInTheDocument();
-  });
-
-  it("shows Free typing subtitle when no limits are configured", () => {
-    const store = configureStore({
-      reducer: rootReducer,
-      preloadedState: {
-        typingConfig: {
-          duration: null,
-          wordCount: null,
-          maxErrors: null,
-          isZenMode: false,
-        },
-      },
-    });
-    store.dispatch(startFromHome({ wordCount: 50 }));
-
-    renderWithLayoutAndTheme(store);
-
-    expect(screen.getByText("Free typing")).toBeInTheDocument();
-  });
-
-  it("shows combined duration and word count subtitle", () => {
-    const store = createTestStore();
-    store.dispatch({
-      type: "typingConfig/setDuration",
-      payload: 30,
-    });
-    store.dispatch({
-      type: "typingConfig/setWordCount",
-      payload: 25,
-    });
-    store.dispatch(startFromHome({ wordCount: 25 }));
-
-    renderWithLayoutAndTheme(store);
-
-    expect(screen.getAllByText(/30s/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/25 words/)).toBeInTheDocument();
-  });
-
-  it("shows word count only subtitle", () => {
-    const store = createTestStore();
-    store.dispatch({
-      type: "typingConfig/setDuration",
-      payload: null,
-    });
-    store.dispatch({
-      type: "typingConfig/setWordCount",
-      payload: 25,
-    });
-    store.dispatch(startFromHome({ wordCount: 25 }));
-
-    renderWithLayoutAndTheme(store);
-
-    expect(screen.getByText(/25 words/)).toBeInTheDocument();
-  });
-
-  it("shows max errors subtitle", () => {
-    const store = createTestStore();
-    store.dispatch({
-      type: "typingConfig/setDuration",
-      payload: null,
-    });
-    store.dispatch({
-      type: "typingConfig/setMaxErrors",
-      payload: 5,
-    });
-    store.dispatch(startFromHome({ wordCount: 50 }));
-
-    renderWithLayoutAndTheme(store);
-
-    expect(screen.getByText(/5 max errors/)).toBeInTheDocument();
   });
 
   it("returns to ready state when Reset is clicked during the test", async () => {
