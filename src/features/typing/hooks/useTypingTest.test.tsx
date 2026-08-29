@@ -146,6 +146,97 @@ describe("useTypingTest", () => {
     expect(screen.getByTestId("index")).toHaveTextContent("2");
   });
 
+  it("blocks backspace before the previous word boundary", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "aa bb cc d");
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("aa bb cc d");
+    expect(screen.getByTestId("index")).toHaveTextContent("10");
+
+    await act(async () => {
+      await user.type(input, "{Backspace}".repeat(8));
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
+    expect(screen.getByTestId("index")).toHaveTextContent("5");
+  });
+
+  it("keeps blocking backspace at the previous word boundary", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "aa bb cc d");
+    });
+
+    await act(async () => {
+      await user.type(input, "{Backspace}".repeat(8));
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
+
+    await act(async () => {
+      await user.type(input, "{Backspace}");
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
+    expect(screen.getByTestId("index")).toHaveTextContent("5");
+  });
+
+  it("allows full deletion of the first two words", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "aa bb");
+    });
+
+    expect(screen.getByTestId("index")).toHaveTextContent("5");
+
+    await act(async () => {
+      await user.type(input, "{Backspace}".repeat(5));
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("");
+    expect(screen.getByTestId("index")).toHaveTextContent("0");
+  });
+
+  it("recalibrates the boundary as typing continues after a backspace", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "aa bb cc d");
+    });
+
+    await act(async () => {
+      await user.type(input, "{Backspace}".repeat(8));
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
+
+    await act(async () => {
+      await user.type(input, " cc");
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("aa bb cc");
+
+    await act(async () => {
+      await user.type(input, "{Backspace}".repeat(6));
+    });
+
+    expect(screen.getByTestId("typed")).toHaveTextContent("aa");
+    expect(screen.getByTestId("index")).toHaveTextContent("2");
+  });
+
   it("backspace when ready does nothing", async () => {
     renderInTestView();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });

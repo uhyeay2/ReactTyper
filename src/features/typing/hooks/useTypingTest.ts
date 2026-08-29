@@ -41,6 +41,7 @@ import {
 import { buildResults } from "../utils/buildResults";
 import { countWordsWithErrors } from "../utils/calculateWordStats";
 import { getExtraWords } from "../utils/wordList";
+import { computeBackspaceBoundary } from "../utils/backspaceBoundary";
 import { useTimer } from "./useTimer";
 
 const WORD_BUFFER_SIZE = 20;
@@ -82,6 +83,7 @@ export function useTypingTest() {
   const correctCharsRef = useRef(0);
   const errorsRef = useRef(0);
   const totalTypedRef = useRef(0);
+  const backspaceBoundaryRef = useRef(0);
 
   const testDuration = configDuration;
 
@@ -181,6 +183,7 @@ export function useTypingTest() {
     errorsRef.current = 0;
     totalTypedRef.current = 0;
     fixedCharsRef.current = "";
+    backspaceBoundaryRef.current = 0;
     if (status === "ready") {
       dispatch(startReadyTest());
     }
@@ -226,6 +229,7 @@ export function useTypingTest() {
         errorsRef.current = 0;
         totalTypedRef.current = 0;
         fixedCharsRef.current = "";
+        backspaceBoundaryRef.current = 0;
         dispatch(startReadyTest());
       } else if (status !== "active") {
         return;
@@ -233,7 +237,10 @@ export function useTypingTest() {
 
       if (key === "Backspace") {
         e.preventDefault();
-        if (currentIndex > 0) {
+        if (
+          currentIndex > 0 &&
+          currentIndex - 1 >= backspaceBoundaryRef.current
+        ) {
           const newTyped = typedText.slice(0, -1);
           const newIndex = currentIndex - 1;
           const deletedChar = typedText[currentIndex - 1];
@@ -277,6 +284,8 @@ export function useTypingTest() {
       const isCorrect = key === targetChar;
       const newTyped = typedText + key;
       const newIndex = currentIndex + 1;
+
+      backspaceBoundaryRef.current = computeBackspaceBoundary(newTyped);
 
       if (isCorrect) {
         correctCharsRef.current += 1;
@@ -371,6 +380,7 @@ export function useTypingTest() {
     errorsRef.current = 0;
     totalTypedRef.current = 0;
     fixedCharsRef.current = "";
+    backspaceBoundaryRef.current = 0;
     dispatch(resetToReady());
   }, [dispatch]);
 
@@ -379,6 +389,7 @@ export function useTypingTest() {
     errorsRef.current = 0;
     totalTypedRef.current = 0;
     fixedCharsRef.current = "";
+    backspaceBoundaryRef.current = 0;
     dispatch(
       startFromHome({ wordCount: configMaxWords ?? DEFAULT_WORD_COUNT }),
     );
