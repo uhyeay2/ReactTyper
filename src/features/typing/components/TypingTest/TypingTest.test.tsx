@@ -442,4 +442,36 @@ describe("TypingTest", () => {
 
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
   });
+
+  it("shows word progress when a word limit is set", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setWordCount", payload: 25 });
+    store.dispatch(startFromHome({ wordCount: 25 }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderWithLayoutAndTheme(store);
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "abc");
+    });
+
+    expect(screen.getByText("Words")).toBeInTheDocument();
+    expect(screen.getAllByText(/^0\/25$/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("shows error progress when a max errors limit is set", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setMaxErrors", payload: 5 });
+    store.dispatch(startFromHome({ wordCount: 50 }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderWithLayoutAndTheme(store);
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "/");
+    });
+
+    expect(screen.getByText("Errors")).toBeInTheDocument();
+    expect(screen.getByText(/^1\/5$/)).toBeInTheDocument();
+  });
 });

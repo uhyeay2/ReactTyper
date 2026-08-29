@@ -224,6 +224,12 @@ export function useTypingTest() {
   const isTimerRunning = status === "active";
   const timerOffset = status === "active" ? pausedElapsed : 0;
 
+  const wordsCompleted = useMemo(() => countTypedWords(typedText), [typedText]);
+  const erroredWords = useMemo(
+    () => countWordsWithErrors(targetText, typedText, fixedChars),
+    [targetText, typedText, fixedChars],
+  );
+
   const { timeRemaining, elapsedTime } = useTimer({
     duration: testDuration,
     isRunning: isTimerRunning,
@@ -491,6 +497,8 @@ export function useTypingTest() {
       errors,
       correctChars,
       totalTyped,
+      wordsCompleted,
+      erroredWords,
       results,
       fixedChars,
       handleStart,
@@ -516,6 +524,8 @@ export function useTypingTest() {
       errors,
       correctChars,
       totalTyped,
+      wordsCompleted,
+      erroredWords,
       results,
       fixedChars,
       handleStart,

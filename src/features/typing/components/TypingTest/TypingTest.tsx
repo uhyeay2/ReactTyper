@@ -55,6 +55,8 @@ export function TypingTest() {
     wpmTimeline,
     timeRemaining,
     elapsedTime,
+    wordsCompleted,
+    erroredWords,
     results,
     handleKeyDown,
     handlePause,
@@ -94,6 +96,22 @@ export function TypingTest() {
             <span className={styles.statValue}>{currentAccuracy}%</span>
             <span className={styles.statLabel}>Accuracy</span>
           </div>
+          {configWordCount !== null && (
+            <div className={styles.stat}>
+              <span className={styles.statValue}>
+                {wordsCompleted}/{configWordCount}
+              </span>
+              <span className={styles.statLabel}>Words</span>
+            </div>
+          )}
+          {configMaxErrors !== null && (
+            <div className={styles.stat}>
+              <span className={styles.statValue}>
+                {erroredWords}/{configMaxErrors}
+              </span>
+              <span className={styles.statLabel}>Errors</span>
+            </div>
+          )}
           <div className={styles.timer}>
             {showCountdown ? `${timeRemaining ?? 0}s` : `${elapsedTime}s`}
           </div>

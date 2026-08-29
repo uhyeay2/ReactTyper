@@ -24,8 +24,8 @@ function renderWithStore(store?: ReturnType<typeof createTestStore>) {
 describe("TestConfigOptions", () => {
   it("renders all section labels", () => {
     renderWithStore();
-    expect(screen.getByText("Time")).toBeInTheDocument();
-    expect(screen.getByText("Words")).toBeInTheDocument();
+    expect(screen.getByText("Time Limit")).toBeInTheDocument();
+    expect(screen.getByText("Word Limit")).toBeInTheDocument();
     expect(screen.getByText("Max Errors")).toBeInTheDocument();
     expect(screen.getByText("Zen Mode")).toBeInTheDocument();
   });

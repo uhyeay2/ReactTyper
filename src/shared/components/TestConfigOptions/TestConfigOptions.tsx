@@ -198,7 +198,7 @@ export function TestConfigOptions() {
   return (
     <div className={styles.config}>
       <div className={styles.section}>
-        <span className={styles.label}>Time</span>
+        <span className={styles.label}>Time Limit</span>
         <div className={styles.options}>
           {[
             { value: 30, label: "30s" },
@@ -239,7 +239,7 @@ export function TestConfigOptions() {
       </div>
 
       <div className={styles.section}>
-        <span className={styles.label}>Words</span>
+        <span className={styles.label}>Word Limit</span>
         <div className={styles.options}>
           {[25, 50, 75, 100].map((w) => (
             <button
