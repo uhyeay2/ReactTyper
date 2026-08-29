@@ -24,6 +24,7 @@ import {
   selectResults,
   selectPausedElapsed,
   selectLiveWpm,
+  selectLiveWpmReady,
   selectWpmTimeline,
   selectFixedChars,
 } from "../state/typingSlice";
@@ -31,7 +32,11 @@ import {
   selectCurrentWpm,
   selectCurrentAccuracy,
 } from "../state/typingSelectors";
-import { buildWordStates, attachWordsToTimeline } from "../metrics/wpm";
+import {
+  buildWordStates,
+  attachWordsToTimeline,
+  backfillInitialWpm,
+} from "../metrics/wpm";
 import {
   selectDuration,
   selectWordCount,
@@ -98,6 +103,7 @@ export function useTypingTest() {
   const currentWpm = useAppSelector(selectCurrentWpm);
   const currentAccuracy = useAppSelector(selectCurrentAccuracy);
   const liveWpm = useAppSelector(selectLiveWpm);
+  const liveWpmReady = useAppSelector(selectLiveWpmReady);
   const wpmTimeline = useAppSelector(selectWpmTimeline);
   const results = useAppSelector(selectResults);
   const pausedElapsed = useAppSelector(selectPausedElapsed);
@@ -168,12 +174,13 @@ export function useTypingTest() {
       finalFixedChars,
     );
 
+    const normalizedTimeline = backfillInitialWpm(recordedTimeline);
     const wordStates = buildWordStates(
       finalTyped,
       finalKeystrokes,
-      recordedTimeline,
+      normalizedTimeline,
     );
-    const wpmTimeline = attachWordsToTimeline(recordedTimeline, wordStates);
+    const wpmTimeline = attachWordsToTimeline(normalizedTimeline, wordStates);
 
     dispatch(
       completeTest({
@@ -424,12 +431,13 @@ export function useTypingTest() {
       finalFixedChars,
     );
 
+    const normalizedTimeline = backfillInitialWpm(recordedTimeline);
     const wordStates = buildWordStates(
       finalTyped,
       finalKeystrokes,
-      recordedTimeline,
+      normalizedTimeline,
     );
-    const wpmTimeline = attachWordsToTimeline(recordedTimeline, wordStates);
+    const wpmTimeline = attachWordsToTimeline(normalizedTimeline, wordStates);
 
     dispatch(
       completeTest({
@@ -476,6 +484,7 @@ export function useTypingTest() {
       currentWpm,
       currentAccuracy,
       liveWpm,
+      liveWpmReady,
       wpmTimeline,
       timeRemaining,
       elapsedTime,
@@ -500,6 +509,7 @@ export function useTypingTest() {
       currentWpm,
       currentAccuracy,
       liveWpm,
+      liveWpmReady,
       wpmTimeline,
       timeRemaining,
       elapsedTime,

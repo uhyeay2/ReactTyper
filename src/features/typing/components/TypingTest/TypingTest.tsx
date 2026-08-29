@@ -8,6 +8,7 @@ import {
 import { useTypingTest } from "../../hooks/useTypingTest";
 import { TypingDisplay } from "../TypingDisplay/TypingDisplay";
 import { TypingInput } from "../TypingInput/TypingInput";
+import { LiveWpm } from "../LiveWpm/LiveWpm";
 import { ResultsDisplay } from "../ResultsDisplay/ResultsDisplay";
 import { TestConfigOptions } from "@/shared/components/TestConfigOptions/TestConfigOptions";
 import { logger } from "@/infrastructure/logging/logger";
@@ -49,6 +50,7 @@ export function TypingTest() {
     fixedChars,
     currentWpm,
     liveWpm,
+    liveWpmReady,
     currentAccuracy,
     wpmTimeline,
     timeRemaining,
@@ -85,7 +87,7 @@ export function TypingTest() {
       {showDisplay && (
         <div className={styles.statsBar}>
           <div className={styles.stat}>
-            <span className={styles.statValue}>{Math.round(liveWpm)}</span>
+            <LiveWpm ready={liveWpmReady} value={liveWpm} />
             <span className={styles.statLabel}>WPM</span>
           </div>
           <div className={styles.stat}>

@@ -7,8 +7,10 @@ import {
   MIN_LIVE_CHARS,
   MIN_LIVE_WINDOW_SECONDS,
   attachWordsToTimeline,
+  backfillInitialWpm,
   buildWordStates,
   computeLiveWpm,
+  isLiveWpmReady,
   type Keystroke,
   type WpmTimelinePoint,
   type WordState,
@@ -100,7 +102,16 @@ describe("computeLiveWpm", () => {
     const last = log[log.length - 1]!.timestamp;
     const first = log[0]!.timestamp;
     const raw = log.length / CHARS_PER_WORD / ((last - first) / 1000 / 60);
-    expect(computeLiveWpm(log, 0)).toBeCloseTo(expectedEma(0, raw), 6);
+    expect(computeLiveWpm(log, 50)).toBeCloseTo(expectedEma(50, raw), 6);
+  });
+
+  it("seeds the first valid emission with the true rate instead of 20% of it", () => {
+    const log = steadyLog(5, 3);
+    const last = log[log.length - 1]!.timestamp;
+    const first = log[0]!.timestamp;
+    const raw = log.length / CHARS_PER_WORD / ((last - first) / 1000 / 60);
+    expect(computeLiveWpm(log, 0)).toBe(raw);
+    expect(raw).toBeGreaterThan(expectedEma(0, raw));
   });
 
   it("never spikes: EMA blends the raw value with the previous emission", () => {
@@ -109,8 +120,8 @@ describe("computeLiveWpm", () => {
     const window = log.filter((k) => last - k.timestamp <= LIVE_WINDOW_MS);
     const spanMs = last - window[0]!.timestamp;
     const raw = window.length / CHARS_PER_WORD / (spanMs / 1000 / 60);
-    const first = expectedEma(0, raw);
-    expect(computeLiveWpm(log, 0)).toBeCloseTo(first, 6);
+    const first = expectedEma(30, raw);
+    expect(computeLiveWpm(log, 30)).toBeCloseTo(first, 6);
     expect(first).toBeLessThan(raw);
   });
 
@@ -151,12 +162,103 @@ describe("computeLiveWpm", () => {
     expect(withinDuration.length).toBeLessThan(LIVE_WINDOW_SIZE);
     const spanMs = (LIVE_WINDOW_SIZE - 1) * 200;
     const raw = LIVE_WINDOW_SIZE / CHARS_PER_WORD / (spanMs / 1000 / 60);
-    expect(computeLiveWpm(log, 0)).toBeCloseTo(expectedEma(0, raw), 6);
+    expect(computeLiveWpm(log, 0)).toBeCloseTo(raw, 6);
   });
 
   it("is deterministic for identical inputs", () => {
     const log = steadyLog(5, 4);
     expect(computeLiveWpm(log, 10)).toBe(computeLiveWpm(log, 10));
+  });
+});
+
+describe("isLiveWpmReady", () => {
+  it("is false for an empty log", () => {
+    expect(isLiveWpmReady([])).toBe(false);
+  });
+
+  it("is false below the minimum character count", () => {
+    expect(isLiveWpmReady(buildLog([9], 1000))).toBe(false);
+  });
+
+  it("is false while the window spans less than the minimum duration", () => {
+    expect(
+      isLiveWpmReady(buildLog([10], MIN_LIVE_WINDOW_SECONDS * 1000 - 100)),
+    ).toBe(false);
+  });
+
+  it("is true once the window holds enough characters over the minimum span", () => {
+    expect(isLiveWpmReady(steadyLog(5, 3))).toBe(true);
+  });
+
+  it("stays true when only the 20-keystroke fallback window is available", () => {
+    expect(
+      isLiveWpmReady(buildLog([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 1000)),
+    ).toBe(true);
+  });
+
+  it("agrees with a non-zero computeLiveWpm emission", () => {
+    const log = steadyLog(5, 3);
+    expect(isLiveWpmReady(log)).toBe(true);
+    expect(computeLiveWpm(log, 0)).toBeGreaterThan(0);
+  });
+});
+
+describe("backfillInitialWpm", () => {
+  it("returns the timeline unchanged when the first point is already valid", () => {
+    const timeline = timelineOf([
+      [1, 42],
+      [2, 45],
+    ]);
+    expect(backfillInitialWpm(timeline)).toBe(timeline);
+  });
+
+  it("returns the timeline unchanged when every point is zero", () => {
+    const timeline = timelineOf([
+      [1, 0],
+      [2, 0],
+    ]);
+    expect(backfillInitialWpm(timeline)).toBe(timeline);
+  });
+
+  it("returns the timeline unchanged when empty", () => {
+    expect(backfillInitialWpm([])).toEqual([]);
+  });
+
+  it("back-fills leading zero points with the first valid WPM", () => {
+    const timeline = timelineOf([
+      [1, 0],
+      [2, 0],
+      [3, 42],
+      [4, 55],
+    ]);
+    expect(backfillInitialWpm(timeline)).toEqual([
+      { second: 1, wpm: 42, words: [] },
+      { second: 2, wpm: 42, words: [] },
+      { second: 3, wpm: 42, words: [] },
+      { second: 4, wpm: 55, words: [] },
+    ]);
+  });
+
+  it("does not mutate the input timeline", () => {
+    const timeline = timelineOf([
+      [1, 0],
+      [2, 44],
+    ]);
+    const result = backfillInitialWpm(timeline);
+    expect(result).not.toBe(timeline);
+    expect(timeline[0]).toEqual({ second: 1, wpm: 0, words: [] });
+    expect(result[0]).toEqual({ second: 1, wpm: 44, words: [] });
+  });
+
+  it("preserves the extra word data carried by back-filled points", () => {
+    const timeline: WpmTimelinePoint[] = [
+      { second: 1, wpm: 0, words: ["hello"] },
+      { second: 2, wpm: 38, words: [] },
+    ];
+    expect(backfillInitialWpm(timeline)).toEqual([
+      { second: 1, wpm: 38, words: ["hello"] },
+      { second: 2, wpm: 38, words: [] },
+    ]);
   });
 });
 

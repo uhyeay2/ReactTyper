@@ -3,9 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
-import {
-  startFromHome,
-} from "@/features/typing/state/typingSlice";
+import { startFromHome } from "@/features/typing/state/typingSlice";
 import {
   ThemeContext,
   type ThemeContextValue,
@@ -37,7 +35,9 @@ function renderInTestView(store?: ReturnType<typeof createTestStore>) {
   };
 }
 
-function renderInTestViewWithLayout(store?: ReturnType<typeof createTestStore>) {
+function renderInTestViewWithLayout(
+  store?: ReturnType<typeof createTestStore>,
+) {
   const testStore = store ?? createTestStore();
   testStore.dispatch(startFromHome({ wordCount: 50 }));
   return {
@@ -54,9 +54,7 @@ function renderInTestViewWithLayout(store?: ReturnType<typeof createTestStore>) 
   };
 }
 
-function renderWithLayoutAndTheme(
-  store: ReturnType<typeof createTestStore>,
-) {
+function renderWithLayoutAndTheme(store: ReturnType<typeof createTestStore>) {
   return {
     ...render(
       <Provider store={store}>
@@ -100,7 +98,9 @@ describe("TypingTest", () => {
       await user.type(input, "a");
     });
 
-    expect(screen.queryByText("Press any key to start")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Press any key to start"),
+    ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Typing test text")).toBeInTheDocument();
     expect(screen.getByText("WPM")).toBeInTheDocument();
   });
@@ -114,7 +114,9 @@ describe("TypingTest", () => {
       await user.type(input, "ab");
     });
 
-    expect(screen.queryByText("Press any key to start")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Press any key to start"),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("WPM")).toBeInTheDocument();
     expect(screen.getByText("Accuracy")).toBeInTheDocument();
   });
@@ -159,6 +161,18 @@ describe("TypingTest", () => {
     expect(statsBar).toBeInTheDocument();
     const statValue = statsBar?.querySelector("span");
     expect(statValue).toBeInTheDocument();
+  });
+
+  it("shows a WPM loading indicator until the live window has data", async () => {
+    renderInTestView();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "ab");
+    });
+
+    expect(screen.getByLabelText("Calculating WPM")).toBeInTheDocument();
   });
 
   it("shows timer with seconds during active test", async () => {

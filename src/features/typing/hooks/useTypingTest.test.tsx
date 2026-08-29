@@ -19,6 +19,7 @@ function TestComponent() {
     currentWpm,
     currentAccuracy,
     liveWpm,
+    liveWpmReady,
     timeRemaining,
     handleKeyDown,
     handleStart,
@@ -35,6 +36,7 @@ function TestComponent() {
       <span data-testid="wpm">{currentWpm}</span>
       <span data-testid="accuracy">{currentAccuracy}</span>
       <span data-testid="live-wpm">{liveWpm}</span>
+      <span data-testid="live-ready">{liveWpmReady ? "ready" : "loading"}</span>
       <span data-testid="time">{timeRemaining ?? "unlimited"}</span>
       <button data-testid="start" onClick={handleStart}>
         Start
@@ -401,6 +403,27 @@ describe("useTypingTest", () => {
     });
 
     expect(screen.getByTestId("live-wpm")).toHaveTextContent("0");
+  });
+
+  it("marks the live WPM ready once the window validates", async () => {
+    renderInTestView();
+    const target = screen.getByTestId("target").textContent ?? "";
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime,
+      delay: 250,
+    });
+    const input = screen.getByTestId("input");
+
+    expect(screen.getByTestId("live-ready")).toHaveTextContent("loading");
+
+    await act(async () => {
+      await user.type(input, target.slice(0, 12));
+    });
+
+    expect(screen.getByTestId("live-ready")).toHaveTextContent("ready");
+    expect(Number(screen.getByTestId("live-wpm").textContent)).toBeGreaterThan(
+      0,
+    );
   });
 
   it("builds the WPM timeline when the test completes", async () => {

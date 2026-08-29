@@ -97,13 +97,47 @@ function selectLiveWindow(keystrokes: Keystroke[]): Keystroke[] {
 }
 
 /**
+ * Returns the validated rolling live window, or null while there is not yet
+ * enough data. A window is valid once it holds at least `MIN_LIVE_CHARS`
+ * keystrokes spanning at least `MIN_LIVE_WINDOW_SECONDS`.
+ */
+function liveWindow(keystrokes: Keystroke[]): Keystroke[] | null {
+  if (keystrokes.length === 0) return null;
+
+  const window = selectLiveWindow(keystrokes);
+  if (window.length < MIN_LIVE_CHARS) return null;
+
+  const firstTimestamp = window[0]!.timestamp;
+  const lastTimestamp = window[window.length - 1]!.timestamp;
+  if (lastTimestamp - firstTimestamp < MIN_LIVE_WINDOW_SECONDS * 1000) {
+    return null;
+  }
+
+  return window;
+}
+
+/**
+ * Reports whether the keystroke log has enough data to produce a reliable
+ * live WPM. The live readout hides its number behind a loading indicator
+ * until this becomes true.
+ */
+export function isLiveWpmReady(keystrokes: Keystroke[]): boolean {
+  return liveWindow(keystrokes) !== null;
+}
+
+/**
  * Computes the smoothed live WPM from the session keystroke log.
  *
- * The rolling window must contain at least `MIN_LIVE_CHARS` characters that
- * span at least `MIN_LIVE_WINDOW_SECONDS` before a value is emitted; otherwise
- * the previous value (0 at test start) is preserved. The raw window WPM is
- * blended with the previous emission using an EMA (`LIVE_WPM_ALPHA`) so the
- * live readout never spikes on a single burst.
+ * While the rolling window is invalid (too few characters, or a span shorter
+ * than `MIN_LIVE_WINDOW_SECONDS`), the previous value (0 at test start) is
+ * preserved.
+ *
+ * The first valid emission seeds the EMA with the raw rolling rate itself
+ * rather than blending with the initial 0 baseline. Blending from zero would
+ * only emit `LIVE_WPM_ALPHA` (20%) of the true pace for the opening window,
+ * producing a misleading low dip at the start of the chart. Every subsequent
+ * emission blends normally, so the live readout never spikes on a single
+ * burst once the EMA is under way.
  *
  * Pure function: the same inputs always yield the same output.
  */
@@ -113,17 +147,14 @@ export function computeLiveWpm(
 ): number {
   if (keystrokes.length === 0) return 0;
 
-  const window = selectLiveWindow(keystrokes);
-  if (window.length < MIN_LIVE_CHARS) return previousLiveWpm;
+  const window = liveWindow(keystrokes);
+  if (window === null) return previousLiveWpm;
 
   const firstTimestamp = window[0]!.timestamp;
   const lastTimestamp = window[window.length - 1]!.timestamp;
   const durationMs = lastTimestamp - firstTimestamp;
-  const durationSeconds = durationMs / 1000;
-
-  if (durationSeconds < MIN_LIVE_WINDOW_SECONDS) return previousLiveWpm;
-
   const rawWpm = toWpm(window.length, durationMs);
+  if (previousLiveWpm === 0) return rawWpm;
   return LIVE_WPM_ALPHA * rawWpm + (1 - LIVE_WPM_ALPHA) * previousLiveWpm;
 }
 
@@ -238,4 +269,28 @@ export function attachWordsToTimeline(
     ...point,
     words: wordsBySecond.get(point.second) ?? [],
   }));
+}
+
+/**
+ * Normalizes the unreliable opening of the timeline.
+ *
+ * Points recorded before the live window first validated are pinned to 0 WPM
+ * only because `computeLiveWpm` has nothing to emit yet; once the window
+ * validates the first value is a fair estimate of the opening pace. Every
+ * leading zero point is therefore back-filled with the first recorded
+ * non-zero WPM, giving the chart a constant start instead of a false 0 dip.
+ *
+ * Returns a new timeline when a back-fill is performed; the input is not
+ * mutated.
+ */
+export function backfillInitialWpm(
+  timeline: WpmTimelinePoint[],
+): WpmTimelinePoint[] {
+  const firstValidIndex = timeline.findIndex((point) => point.wpm > 0);
+  if (firstValidIndex <= 0) return timeline;
+
+  const backfillWpm = timeline[firstValidIndex]!.wpm;
+  return timeline.map((point, index) =>
+    index < firstValidIndex ? { ...point, wpm: backfillWpm } : point,
+  );
 }

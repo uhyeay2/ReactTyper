@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { TypingState, TypingResults, WpmSnapshot } from "./typingTypes";
 import type { Keystroke, WpmTimelinePoint } from "../metrics/wpm";
-import { computeLiveWpm } from "../metrics/wpm";
+import { computeLiveWpm, isLiveWpmReady } from "../metrics/wpm";
 import { getTargetText } from "../utils/wordList";
 
 const DEFAULT_WORD_COUNT = 50;
@@ -236,6 +236,8 @@ export const selectWpmHistory = (state: { typing: TypingState }) =>
   state.typing.wpmHistory;
 export const selectLiveWpm = (state: { typing: TypingState }) =>
   state.typing.liveWpm;
+export const selectLiveWpmReady = (state: { typing: TypingState }) =>
+  isLiveWpmReady(state.typing.keystrokes);
 export const selectWpmTimeline = (state: { typing: TypingState }) =>
   state.typing.wpmTimeline;
 export const selectKeystrokes = (state: { typing: TypingState }) =>

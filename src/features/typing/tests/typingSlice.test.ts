@@ -18,6 +18,7 @@ import typingReducer, {
   selectView,
   selectWpmHistory,
   selectLiveWpm,
+  selectLiveWpmReady,
   selectWpmTimeline,
   selectKeystrokes,
   pauseTest,
@@ -535,6 +536,29 @@ describe("typingSlice", () => {
       const keystrokes = [{ timestamp: 1, charIndex: 0 }];
       const state = { typing: { ...initialState, keystrokes } };
       expect(selectKeystrokes(state)).toEqual(keystrokes);
+    });
+
+    it("selectLiveWpmReady is false before the window has enough data", () => {
+      const state = {
+        typing: {
+          ...initialState,
+          keystrokes: [{ timestamp: 0, charIndex: 0 }],
+        },
+      };
+      expect(selectLiveWpmReady(state)).toBe(false);
+    });
+
+    it("selectLiveWpmReady is true once the window validates", () => {
+      const state = {
+        typing: {
+          ...initialState,
+          keystrokes: Array.from({ length: 12 }, (_, i) => ({
+            timestamp: i * 200,
+            charIndex: i,
+          })),
+        },
+      };
+      expect(selectLiveWpmReady(state)).toBe(true);
     });
   });
 

@@ -38,12 +38,6 @@
   gap: 6px;
 }
 
-.statValue {
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--text);
-}
-
 .statLabel {
   font-size: 14px;
   color: var(--text-muted);
@@ -71,7 +65,10 @@
   cursor: pointer;
   font-size: 14px;
   font-family: inherit;
-  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .controlBtn:hover {
