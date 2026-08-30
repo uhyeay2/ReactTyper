@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
 import {
@@ -33,9 +34,11 @@ function renderLayout(store: ReturnType<typeof createStore>) {
   return render(
     <Provider store={store}>
       <ThemeProvider>
-        <Layout>
-          <div>Page Content</div>
-        </Layout>
+        <MemoryRouter>
+          <Layout>
+            <div>Page Content</div>
+          </Layout>
+        </MemoryRouter>
       </ThemeProvider>
     </Provider>,
   );

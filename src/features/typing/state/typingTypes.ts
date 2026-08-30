@@ -4,6 +4,13 @@ export type TestStatus = "idle" | "ready" | "active" | "paused" | "completed";
 
 export type ViewType = "home" | "test";
 
+export interface TypingSessionContext {
+  sessionType: number;
+  lessonSlug: string | null;
+  lessonUnitOrder: number | null;
+  wordBankSlug: string | null;
+}
+
 export type CharState =
   "pending" | "correct" | "fixed" | "incorrect" | "current";
 
@@ -22,6 +29,7 @@ export interface TypingResults {
   lowestWpm: number;
   averageWpm: number;
   wordStates: WordState[];
+  charStates: CharState[];
 }
 
 export interface WpmSnapshot {
@@ -49,4 +57,5 @@ export interface TypingState {
   keystrokes: Keystroke[];
   liveWpm: number;
   wpmTimeline: WpmTimelinePoint[];
+  sessionContext: TypingSessionContext;
 }

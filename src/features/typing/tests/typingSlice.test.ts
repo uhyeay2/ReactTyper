@@ -46,6 +46,12 @@ const initialState: TypingState = {
   keystrokes: [],
   liveWpm: 0,
   wpmTimeline: [],
+  sessionContext: {
+    sessionType: 0,
+    lessonSlug: null,
+    lessonUnitOrder: null,
+    wordBankSlug: null,
+  },
 };
 
 describe("typingSlice", () => {
@@ -133,6 +139,7 @@ describe("typingSlice", () => {
         lowestWpm: 40,
         averageWpm: 62,
         wordStates: [],
+        charStates: [],
       };
       const state = typingReducer(
         { ...initialState, status: "active" },
@@ -217,6 +224,7 @@ describe("typingSlice", () => {
         lowestWpm: 40,
         averageWpm: 62,
         wordStates: [],
+        charStates: [],
       };
       const state = { typing: { ...initialState, results } };
       expect(selectResults(state)).toEqual(results);
@@ -283,6 +291,7 @@ describe("typingSlice", () => {
             lowestWpm: 30,
             averageWpm: 50,
             wordStates: [],
+            charStates: [],
           },
         },
         startFromHome({ wordCount: 25 }),

@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { WpmTimelinePoint } from "../../metrics/wpm";
 import styles from "./WpmGraph.module.css";
+
+/**
+ * A single point of a WPM timeline ready for charting. `words` is optional so
+ * persisted history points (which drop per-second word attribution) can be
+ * rendered without modification.
+ */
+export interface WpmGraphPoint {
+  /** 1-based second of the test this point represents. */
+  second: number;
+  /** WPM displayed at that second. */
+  wpm: number;
+  /** Words whose completion falls within this second. */
+  words?: string[];
+}
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 10;
@@ -20,10 +33,10 @@ interface WheelLike {
 }
 
 interface WpmGraphProps {
-  wpmTimeline: WpmTimelinePoint[];
+  wpmTimeline: WpmGraphPoint[];
 }
 
-function getMaxWpm(points: WpmTimelinePoint[]): number {
+function getMaxWpm(points: WpmGraphPoint[]): number {
   if (points.length === 0) return 0;
   return Math.max(...points.map((p) => p.wpm), 0);
 }
@@ -38,7 +51,7 @@ function getAxisMax(maxWpm: number): number {
 export function WpmGraph({ wpmTimeline }: WpmGraphProps) {
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [pan, setPan] = useState(0);
-  const [hovered, setHovered] = useState<WpmTimelinePoint | null>(null);
+  const [hovered, setHovered] = useState<WpmGraphPoint | null>(null);
   const dragRef = useRef<{ startX: number; startPan: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -193,7 +206,7 @@ export function WpmGraph({ wpmTimeline }: WpmGraphProps) {
         clampedPan +
         ((cursorX - PADDING_LEFT) / chartInnerWidth) * visibleWindow;
 
-      let nearest: WpmTimelinePoint | null = null;
+      let nearest: WpmGraphPoint | null = null;
       let nearestDistance = Number.POSITIVE_INFINITY;
       for (const point of visibleData) {
         const distance = Math.abs(point.second - mouseSecond);
@@ -220,7 +233,7 @@ export function WpmGraph({ wpmTimeline }: WpmGraphProps) {
     setHovered(null);
   }, []);
 
-  const handleDataPointHover = useCallback((point: WpmTimelinePoint) => {
+  const handleDataPointHover = useCallback((point: WpmGraphPoint) => {
     if (!dragRef.current) setHovered(point);
   }, []);
 
@@ -385,7 +398,7 @@ export function WpmGraph({ wpmTimeline }: WpmGraphProps) {
         >
           <span className={styles.tooltipSecond}>Second {hovered.second}</span>
           <span className={styles.tooltipWpm}>{hovered.wpm} WPM</span>
-          {hovered.words.length > 0 && (
+          {hovered.words !== undefined && hovered.words.length > 0 && (
             <span className={styles.tooltipWords}>
               {hovered.words.join(", ")}
             </span>

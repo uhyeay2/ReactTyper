@@ -39,6 +39,13 @@ describe("buildResults", () => {
     expect(results.lowestWpm).toBe(10);
     expect(results.averageWpm).toBe(10);
     expect(results.incorrectChars).toBe(1);
+    expect(results.charStates).toEqual([
+      "correct",
+      "correct",
+      "correct",
+      "correct",
+      "incorrect",
+    ]);
 
     expect(wpmTimeline).toEqual([
       { second: 1, wpm: 10, words: ["aaaab"] },
@@ -91,6 +98,13 @@ describe("buildResults", () => {
     expect(results.wordsTypedWithCorrections).toBe(1);
     expect(results.wordsTypedPerfectly).toBe(0);
     expect(results.incorrectChars).toBe(1);
+    expect(results.charStates).toEqual([
+      "fixed",
+      "correct",
+      "correct",
+      "correct",
+      "correct",
+    ]);
   });
 
   it("backfills leading zero timeline points before measuring the range", () => {

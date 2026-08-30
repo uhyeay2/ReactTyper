@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
 import { startFromHome } from "@/features/typing/state/typingSlice";
@@ -30,7 +31,9 @@ function renderApp(store: ReturnType<typeof createStore>) {
   return render(
     <Provider store={store}>
       <ThemeProvider>
-        <App />
+        <MemoryRouter>
+          <App />
+        </MemoryRouter>
       </ThemeProvider>
     </Provider>,
   );

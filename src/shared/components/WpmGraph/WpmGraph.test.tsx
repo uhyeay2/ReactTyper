@@ -1,8 +1,7 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { WpmGraph } from "./WpmGraph";
-import type { WpmTimelinePoint } from "../../metrics/wpm";
+import { WpmGraph, type WpmGraphPoint } from "./WpmGraph";
 
-const sampleTimeline: WpmTimelinePoint[] = Array.from(
+const sampleTimeline: WpmGraphPoint[] = Array.from(
   { length: 14 },
   (_, i) => ({
     second: i + 1,
@@ -184,7 +183,7 @@ describe("WpmGraph", () => {
   });
 
   it("shows the second, speed, and words typed in the tooltip", () => {
-    const timeline: WpmTimelinePoint[] = [
+    const timeline: WpmGraphPoint[] = [
       { second: 3, wpm: 72, words: ["alpha", "beta"] },
     ];
     render(<WpmGraph wpmTimeline={timeline} />);
@@ -194,6 +193,20 @@ describe("WpmGraph", () => {
     expect(screen.getByText("Second 3")).toBeInTheDocument();
     expect(screen.getByText("72 WPM")).toBeInTheDocument();
     expect(screen.getByText("alpha, beta")).toBeInTheDocument();
+  });
+
+  it("renders points without a words property (persisted history shapes)", () => {
+    const timeline: WpmGraphPoint[] = [
+      { second: 2, wpm: 48 },
+      { second: 3, wpm: 66 },
+    ];
+    render(<WpmGraph wpmTimeline={timeline} />);
+
+    fireEvent.pointerEnter(Array.from(document.querySelectorAll("circle"))[0]!);
+
+    expect(screen.getByText("Second 2")).toBeInTheDocument();
+    expect(screen.getByText("48 WPM")).toBeInTheDocument();
+    expect(screen.queryByText("alpha, beta")).not.toBeInTheDocument();
   });
 
   it("snaps the tooltip to the nearest vertical line on pointer move", () => {
@@ -218,7 +231,7 @@ describe("WpmGraph", () => {
       screen.getByText(`${sampleTimeline[0]!.wpm} WPM`),
     ).toBeInTheDocument();
 
-    const longerTimeline: WpmTimelinePoint[] = Array.from(
+    const longerTimeline: WpmGraphPoint[] = Array.from(
       { length: 12 },
       (_, i) => ({ second: i + 1, wpm: 144, words: [] }),
     );

@@ -1,10 +1,23 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { TypingState, TypingResults, WpmSnapshot } from "./typingTypes";
+import type {
+  TypingState,
+  TypingResults,
+  WpmSnapshot,
+  TypingSessionContext,
+} from "./typingTypes";
 import type { Keystroke, WpmTimelinePoint } from "../metrics/wpm";
 import { computeLiveWpm, isLiveWpmReady } from "../metrics/wpm";
 import { getTargetText } from "../utils/wordList";
+import { SessionTypeValue } from "@/features/history/state/historyTypes";
 
 const DEFAULT_WORD_COUNT = 50;
+
+const DEFAULT_SESSION: TypingSessionContext = {
+  sessionType: SessionTypeValue.TypingTest,
+  lessonSlug: null,
+  lessonUnitOrder: null,
+  wordBankSlug: null,
+};
 
 export const initialState: TypingState = {
   view: "home",
@@ -25,6 +38,7 @@ export const initialState: TypingState = {
   keystrokes: [],
   liveWpm: 0,
   wpmTimeline: [],
+  sessionContext: DEFAULT_SESSION,
 };
 
 const typingSlice = createSlice({
@@ -54,6 +68,42 @@ const typingSlice = createSlice({
       state.keystrokes = [];
       state.liveWpm = 0;
       state.wpmTimeline = [];
+      state.sessionContext = DEFAULT_SESSION;
+    },
+    startLessonSession(
+      state,
+      action: PayloadAction<{
+        targetText: string;
+        sessionType: number;
+        lessonSlug: string | null;
+        lessonUnitOrder: number | null;
+      }>,
+    ) {
+      const target = action.payload.targetText.trim();
+      state.view = "test";
+      state.status = "ready";
+      state.targetText = target;
+      state.typedText = "";
+      state.currentIndex = 0;
+      state.errors = 0;
+      state.correctChars = 0;
+      state.totalTyped = 0;
+      state.startTime = null;
+      state.elapsedTime = 0;
+      state.results = null;
+      state.wordCount = target.length > 0 ? target.split(/\s+/).length : 0;
+      state.fixedChars = "";
+      state.pausedElapsed = 0;
+      state.wpmHistory = [];
+      state.keystrokes = [];
+      state.liveWpm = 0;
+      state.wpmTimeline = [];
+      state.sessionContext = {
+        sessionType: action.payload.sessionType,
+        lessonSlug: action.payload.lessonSlug,
+        lessonUnitOrder: action.payload.lessonUnitOrder,
+        wordBankSlug: null,
+      };
     },
     readyTest(state) {
       state.status = "ready";
@@ -174,6 +224,7 @@ const typingSlice = createSlice({
       state.keystrokes = [];
       state.liveWpm = 0;
       state.wpmTimeline = [];
+      state.sessionContext = DEFAULT_SESSION;
     },
     refreshTest(state) {
       const wordCount = state.wordCount;
@@ -191,6 +242,7 @@ const typingSlice = createSlice({
 export const {
   navigateHome,
   startFromHome,
+  startLessonSession,
   readyTest,
   startReadyTest,
   startTest,
@@ -242,6 +294,8 @@ export const selectWpmTimeline = (state: { typing: TypingState }) =>
   state.typing.wpmTimeline;
 export const selectKeystrokes = (state: { typing: TypingState }) =>
   state.typing.keystrokes;
+export const selectSessionContext = (state: { typing: TypingState }) =>
+  state.typing.sessionContext;
 
 export const selectFinalErrors = (state: { typing: TypingState }) => {
   const { targetText, typedText } = state.typing;

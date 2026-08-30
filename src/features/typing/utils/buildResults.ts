@@ -10,6 +10,7 @@ import { calculateAverageWpm } from "./calculateAverageWpm";
 import { calculateWpmRange } from "./calculateWpmRange";
 import { calculateWordStats } from "./calculateWordStats";
 import type { TypingResults } from "../state/typingTypes";
+import { computeCharStates } from "../state/typingSelectors";
 
 export interface BuildResultsInput {
   typedText: string;
@@ -57,6 +58,12 @@ export function buildResults({
   const wordStates = buildWordStates(typedText, keystrokes, normalizedTimeline);
   const wpmTimeline = attachWordsToTimeline(normalizedTimeline, wordStates);
   const wpmRange = calculateWpmRange(wpmTimeline);
+  const charStates = computeCharStates(
+    targetText,
+    typedText,
+    typedText.length,
+    fixedChars,
+  );
 
   return {
     results: {
@@ -75,6 +82,7 @@ export function buildResults({
       lowestWpm: wpmRange.lowest,
       averageWpm: calculateAverageWpm(wpmTimeline),
       wordStates,
+      charStates,
     },
     wpmTimeline,
   };

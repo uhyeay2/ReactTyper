@@ -18,6 +18,7 @@ const results: TypingResults = {
   lowestWpm: 44,
   averageWpm: 62,
   wordStates: [],
+  charStates: [],
 };
 
 const baseProps: ComponentProps<typeof ResultsDisplay> = {

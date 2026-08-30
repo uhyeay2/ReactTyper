@@ -1,6 +1,7 @@
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
 import { startFromHome } from "@/features/typing/state/typingSlice";
@@ -44,9 +45,11 @@ function renderInTestViewWithLayout(
     ...render(
       <Provider store={testStore}>
         <ThemeContext.Provider value={mockThemeContext}>
-          <Layout>
-            <TypingTest />
-          </Layout>
+          <MemoryRouter>
+            <Layout>
+              <TypingTest />
+            </Layout>
+          </MemoryRouter>
         </ThemeContext.Provider>
       </Provider>,
     ),
@@ -59,9 +62,11 @@ function renderWithLayoutAndTheme(store: ReturnType<typeof createTestStore>) {
     ...render(
       <Provider store={store}>
         <ThemeContext.Provider value={mockThemeContext}>
-          <Layout>
-            <TypingTest />
-          </Layout>
+          <MemoryRouter>
+            <Layout>
+              <TypingTest />
+            </Layout>
+          </MemoryRouter>
         </ThemeContext.Provider>
       </Provider>,
     ),

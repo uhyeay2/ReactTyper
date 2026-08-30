@@ -1,0 +1,59 @@
+.scrollWrapper {
+  max-height: 264px;
+  overflow-y: auto;
+  max-width: 720px;
+  width: 100%;
+}
+
+.display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.word {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wordChars {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 18px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.char {
+  position: relative;
+}
+
+.correct {
+  color: var(--correct);
+}
+
+.fixed {
+  color: var(--fixed);
+}
+
+.incorrect {
+  color: var(--error);
+  text-decoration: underline;
+  text-decoration-color: var(--error);
+}
+
+.wordLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 16px;
+  text-align: center;
+}

@@ -43,6 +43,8 @@ import { countWordsWithErrors } from "../utils/calculateWordStats";
 import { getExtraWords } from "../utils/wordList";
 import { computeBackspaceBoundary } from "../utils/backspaceBoundary";
 import { useTimer } from "./useTimer";
+import { recordResult } from "@/features/history/state/historySlice";
+import { buildRecordPayload } from "@/features/history/utils/buildRecordPayload";
 
 const WORD_BUFFER_SIZE = 20;
 const DEFAULT_WORD_COUNT = 50;
@@ -122,7 +124,10 @@ export function useTypingTest() {
       fixedChars: finalFixedChars,
       keystrokes: finalKeystrokes,
       wpmTimeline: recordedTimeline,
+      sessionContext,
     } = typingStore.getState().typing;
+    const authStatus = typingStore.getState().auth.status;
+    const config = typingStore.getState().typingConfig;
 
     const { results, wpmTimeline } = buildResults({
       typedText: finalTyped,
@@ -136,6 +141,26 @@ export function useTypingTest() {
     });
 
     dispatch(completeTest({ results, wpmTimeline }));
+
+    if (authStatus === "authenticated") {
+      const targetWordCount = countTypedWords(finalTarget);
+      dispatch(
+        recordResult(
+          buildRecordPayload({
+            results,
+            sessionContext,
+            config: {
+              duration: config.duration,
+              wordCount: config.wordCount,
+              maxErrors: config.maxErrors,
+              isZenMode: config.isZenMode,
+            },
+            targetWordCount,
+            wpmTimeline,
+          }),
+        ),
+      );
+    }
   }, [dispatch, typingStore]);
 
   const handleTick = useCallback(
