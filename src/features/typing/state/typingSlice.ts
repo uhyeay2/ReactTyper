@@ -9,6 +9,7 @@ import type { Keystroke, WpmTimelinePoint } from "../metrics/wpm";
 import { computeLiveWpm, isLiveWpmReady } from "../metrics/wpm";
 import { getTargetText } from "../utils/wordList";
 import { SessionTypeValue } from "@/features/history/state/historyTypes";
+import { isLessonSessionType } from "@/features/history/utils/sessionType";
 
 const DEFAULT_WORD_COUNT = 50;
 
@@ -224,7 +225,6 @@ const typingSlice = createSlice({
       state.keystrokes = [];
       state.liveWpm = 0;
       state.wpmTimeline = [];
-      state.sessionContext = DEFAULT_SESSION;
     },
     refreshTest(state) {
       const wordCount = state.wordCount;
@@ -296,6 +296,8 @@ export const selectKeystrokes = (state: { typing: TypingState }) =>
   state.typing.keystrokes;
 export const selectSessionContext = (state: { typing: TypingState }) =>
   state.typing.sessionContext;
+export const selectIsLessonSession = (state: { typing: TypingState }) =>
+  isLessonSessionType(state.typing.sessionContext.sessionType);
 
 export const selectFinalErrors = (state: { typing: TypingState }) => {
   const { targetText, typedText } = state.typing;

@@ -1,16 +1,40 @@
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
-import { startFromHome } from "@/features/typing/state/typingSlice";
+import {
+  startFromHome,
+  startLessonSession,
+} from "@/features/typing/state/typingSlice";
+import { SessionTypeValue } from "@/features/history/state/historyTypes";
+import { apiGetLesson } from "@/features/lessons/services/lessonsApi";
+import type { LessonDetail } from "@/features/lessons/state/lessonTypes";
 import {
   ThemeContext,
   type ThemeContextValue,
 } from "@/features/theme/providers/ThemeContext";
 import { Layout } from "@/shared/components/Layout/Layout";
 import { TypingTest } from "./TypingTest";
+
+vi.mock("@/features/lessons/services/lessonsApi", () => ({
+  apiGetLesson: vi.fn(),
+  apiListLessons: vi.fn(),
+}));
+
+const apiGetLessonMock = vi.mocked(apiGetLesson);
+
+const MOCK_LESSON: LessonDetail = {
+  slug: "lesson-a",
+  title: "Lesson A",
+  description: "A lesson",
+  difficultyLevel: 1,
+  units: [
+    { order: 0, title: "Unit One", content: "first unit words here" },
+    { order: 1, title: "Unit Two", content: "second unit words here" },
+  ],
+};
 
 function createTestStore() {
   return configureStore({ reducer: rootReducer });
@@ -29,7 +53,9 @@ function renderInTestView(store?: ReturnType<typeof createTestStore>) {
   return {
     ...render(
       <Provider store={testStore}>
-        <TypingTest />
+        <MemoryRouter>
+          <TypingTest />
+        </MemoryRouter>
       </Provider>,
     ),
     store: testStore,
@@ -72,6 +98,41 @@ function renderWithLayoutAndTheme(store: ReturnType<typeof createTestStore>) {
     ),
     store,
   };
+}
+
+function renderLessonSession(
+  store: ReturnType<typeof createTestStore>,
+  targetText: string,
+  lessonUnitOrder = 0,
+) {
+  apiGetLessonMock.mockReset();
+  apiGetLessonMock.mockResolvedValue(MOCK_LESSON);
+  store.dispatch(
+    startLessonSession({
+      targetText,
+      sessionType: SessionTypeValue.LessonUnit,
+      lessonSlug: "lesson-a",
+      lessonUnitOrder,
+    }),
+  );
+  return render(
+    <Provider store={store}>
+      <MemoryRouter>
+        <TypingTest />
+      </MemoryRouter>
+    </Provider>,
+  );
+}
+
+async function completeLessonSessionViaQuit() {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  const input = screen.getByLabelText("Typing input");
+  await act(async () => {
+    await user.type(input, "fi");
+  });
+  act(() => {
+    screen.getByText("Quit").click();
+  });
 }
 
 describe("TypingTest", () => {
@@ -490,5 +551,120 @@ describe("TypingTest", () => {
 
     expect(screen.getByText("Errors")).toBeInTheDocument();
     expect(screen.getByText(/^1\/5$/)).toBeInTheDocument();
+  });
+
+  it("hides Test Settings and shows lesson actions when a lesson completes", async () => {
+    const store = createTestStore();
+    renderLessonSession(store, "first unit words here", 0);
+
+    await completeLessonSessionViaQuit();
+
+    await waitFor(() => {
+      expect(screen.getByText("Next Lesson")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Retry")).toBeInTheDocument();
+    expect(screen.getByText("Return to Lessons")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Test Settings/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Try Again")).not.toBeInTheDocument();
+    expect(screen.queryByText("New Words")).not.toBeInTheDocument();
+  });
+
+  it("retries the same lesson unit from the results screen", async () => {
+    const store = createTestStore();
+    renderLessonSession(store, "first unit words here", 0);
+
+    await completeLessonSessionViaQuit();
+
+    await waitFor(() => {
+      expect(screen.getByText("Retry")).toBeInTheDocument();
+    });
+
+    act(() => {
+      screen.getByText("Retry").click();
+    });
+
+    expect(screen.getByText("Press any key to start")).toBeInTheDocument();
+    expect(store.getState().typing.targetText).toBe("first unit words here");
+    expect(store.getState().typing.sessionContext.sessionType).toBe(
+      SessionTypeValue.LessonUnit,
+    );
+  });
+
+  it("starts the next unit when Next Lesson is clicked", async () => {
+    const store = createTestStore();
+    renderLessonSession(store, "first unit words here", 0);
+
+    await completeLessonSessionViaQuit();
+
+    await waitFor(() => {
+      expect(screen.getByText("Next Lesson")).toBeInTheDocument();
+    });
+
+    act(() => {
+      screen.getByText("Next Lesson").click();
+    });
+
+    expect(store.getState().typing.targetText).toBe("second unit words here");
+    expect(store.getState().typing.sessionContext.lessonUnitOrder).toBe(1);
+    expect(store.getState().typing.status).toBe("ready");
+    expect(screen.getByText("Press any key to start")).toBeInTheDocument();
+  });
+
+  it("omits Next Lesson when there is no next unit", async () => {
+    const store = createTestStore();
+    renderLessonSession(store, "second unit words here", 1);
+
+    await completeLessonSessionViaQuit();
+
+    await waitFor(() => {
+      expect(apiGetLessonMock).toHaveBeenCalledWith("lesson-a");
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Retry")).toBeInTheDocument();
+    expect(screen.getByText("Return to Lessons")).toBeInTheDocument();
+    expect(screen.queryByText("Next Lesson")).not.toBeInTheDocument();
+  });
+
+  it("returns to lessons from the results screen", async () => {
+    const store = createTestStore();
+    renderLessonSession(store, "first unit words here", 0);
+
+    await completeLessonSessionViaQuit();
+
+    await waitFor(() => {
+      expect(screen.getByText("Return to Lessons")).toBeInTheDocument();
+    });
+
+    act(() => {
+      screen.getByText("Return to Lessons").click();
+    });
+
+    expect(store.getState().typing.view).toBe("home");
+  });
+
+  it("hides word/error stats and Refresh during a lesson session", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setWordCount", payload: 25 });
+    store.dispatch({ type: "typingConfig/setMaxErrors", payload: 5 });
+    renderLessonSession(store, "first unit words here", 0);
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByLabelText("Typing input");
+
+    await act(async () => {
+      await user.type(input, "first ");
+    });
+
+    expect(screen.getByText("WPM")).toBeInTheDocument();
+    expect(screen.getByText("Accuracy")).toBeInTheDocument();
+    expect(screen.queryByText("Words")).not.toBeInTheDocument();
+    expect(screen.queryByText("Errors")).not.toBeInTheDocument();
+    expect(screen.queryByText("Refresh")).not.toBeInTheDocument();
   });
 });

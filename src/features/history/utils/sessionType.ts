@@ -9,3 +9,10 @@ const LABELS: Record<SessionType, string> = {
 export function sessionTypeLabel(sessionType: SessionType): string {
   return LABELS[sessionType] ?? "Typing Test";
 }
+
+export function isLessonSessionType(sessionType: number): boolean {
+  return (
+    sessionType === SessionTypeValue.Lesson ||
+    sessionType === SessionTypeValue.LessonUnit
+  );
+}

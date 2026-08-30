@@ -1,4 +1,6 @@
-import { useAppSelector } from "@/app/hooks";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import {
   selectDuration,
   selectWordCount,
@@ -6,6 +8,15 @@ import {
   selectIsZenMode,
 } from "@/features/typingConfig/state/typingConfigSlice";
 import { formatConfigSummary } from "@/features/typingConfig/utils/formatConfigSummary";
+import { SessionTypeValue } from "@/features/history/state/historyTypes";
+import { apiGetLesson } from "@/features/lessons/services/lessonsApi";
+import type { LessonUnit } from "@/features/lessons/state/lessonTypes";
+import {
+  navigateHome,
+  startLessonSession,
+  selectSessionContext,
+  selectIsLessonSession,
+} from "../../state/typingSlice";
 import { useTypingTest } from "../../hooks/useTypingTest";
 import { TypingDisplay } from "../TypingDisplay/TypingDisplay";
 import { TypingInput } from "../TypingInput/TypingInput";
@@ -23,6 +34,10 @@ export function TypingTest() {
   const configWordCount = useAppSelector(selectWordCount);
   const configMaxErrors = useAppSelector(selectMaxErrors);
   const isZenMode = useAppSelector(selectIsZenMode);
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const isLessonSession = useAppSelector(selectIsLessonSession);
+  const sessionContext = useAppSelector(selectSessionContext);
 
   const {
     status,
@@ -48,6 +63,59 @@ export function TypingTest() {
     handleRefresh,
   } = useTypingTest();
 
+  const [lessonUnits, setLessonUnits] = useState<LessonUnit[] | null>(null);
+  const [nextUnitError, setNextUnitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLessonSession || status !== "completed") return;
+    const slug = sessionContext.lessonSlug;
+    if (slug === null) return;
+    let cancelled = false;
+    apiGetLesson(slug)
+      .then((lesson) => {
+        if (cancelled) return;
+        setLessonUnits(lesson.units);
+        setNextUnitError(null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setNextUnitError("Unable to load the next lesson.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLessonSession, status, sessionContext.lessonSlug]);
+
+  const currentUnitOrder = sessionContext.lessonUnitOrder;
+
+  const nextUnit = useMemo(() => {
+    if (lessonUnits === null || currentUnitOrder === null) return null;
+    return (
+      lessonUnits.find((unit) => unit.order === currentUnitOrder + 1) ?? null
+    );
+  }, [lessonUnits, currentUnitOrder]);
+
+  const handleNextLesson = useCallback(() => {
+    if (nextUnit === null) return;
+    logger.info("Next lesson unit started", {
+      lessonSlug: sessionContext.lessonSlug,
+      lessonUnitOrder: nextUnit.order,
+    });
+    dispatch(
+      startLessonSession({
+        targetText: nextUnit.content,
+        sessionType: SessionTypeValue.LessonUnit,
+        lessonSlug: sessionContext.lessonSlug,
+        lessonUnitOrder: nextUnit.order,
+      }),
+    );
+  }, [dispatch, nextUnit, sessionContext.lessonSlug]);
+
+  const handleReturnToLessons = useCallback(() => {
+    dispatch(navigateHome());
+    navigate("/lessons");
+  }, [dispatch, navigate]);
+
   const showDisplay =
     status === "ready" || status === "active" || status === "paused";
   const isCompleted = status === "completed";
@@ -59,7 +127,8 @@ export function TypingTest() {
     configMaxErrors,
   );
 
-  const showCountdown = configDuration !== null && !isZenMode;
+  const showCountdown =
+    configDuration !== null && !isZenMode && !isLessonSession;
 
   return (
     <div className={styles.container}>
@@ -69,42 +138,87 @@ export function TypingTest() {
 
       {isCompleted && results && (
         <>
-          <CollapsibleSection
-            title="Test Settings"
-            summary={configSummary}
-            storageKey={TEST_SETTINGS_STORAGE_KEY}
-            defaultOpen={false}
-          >
-            <TestConfigOptions />
-          </CollapsibleSection>
-          <div className={styles.controls}>
-            <button
-              type="button"
-              className={styles.controlBtn}
-              onClick={() => {
-                logger.info("Test restarted", {
-                  wpm: results.wpm,
-                  accuracy: results.accuracy,
-                });
-                handleReset();
-              }}
-            >
-              Try Again
-            </button>
-            <button
-              type="button"
-              className={styles.controlBtn}
-              onClick={() => {
-                logger.info("Test refreshed from results", {
-                  wpm: results.wpm,
-                  accuracy: results.accuracy,
-                });
-                handleRefresh();
-              }}
-            >
-              New Words
-            </button>
-          </div>
+          {isLessonSession ? (
+            <div className={styles.controls}>
+              <button
+                type="button"
+                className={styles.controlBtn}
+                onClick={() => {
+                  logger.info("Lesson unit retried", {
+                    wpm: results.wpm,
+                    accuracy: results.accuracy,
+                  });
+                  handleReset();
+                }}
+              >
+                Retry
+              </button>
+              {nextUnit !== null && (
+                <button
+                  type="button"
+                  className={styles.controlBtn}
+                  onClick={handleNextLesson}
+                >
+                  Next Lesson
+                </button>
+              )}
+              {nextUnitError !== null && (
+                <p className={styles.errorHint}>{nextUnitError}</p>
+              )}
+              <button
+                type="button"
+                className={styles.controlBtn}
+                onClick={() => {
+                  logger.info("Returned to lessons", {
+                    wpm: results.wpm,
+                    accuracy: results.accuracy,
+                  });
+                  handleReturnToLessons();
+                }}
+              >
+                Return to Lessons
+              </button>
+            </div>
+          ) : (
+            <>
+              <CollapsibleSection
+                title="Test Settings"
+                summary={configSummary}
+                storageKey={TEST_SETTINGS_STORAGE_KEY}
+                defaultOpen={false}
+              >
+                <TestConfigOptions />
+              </CollapsibleSection>
+              <div className={styles.controls}>
+                <button
+                  type="button"
+                  className={styles.controlBtn}
+                  onClick={() => {
+                    logger.info("Test restarted", {
+                      wpm: results.wpm,
+                      accuracy: results.accuracy,
+                    });
+                    handleReset();
+                  }}
+                >
+                  Try Again
+                </button>
+                <button
+                  type="button"
+                  className={styles.controlBtn}
+                  onClick={() => {
+                    logger.info("Test refreshed from results", {
+                      wpm: results.wpm,
+                      accuracy: results.accuracy,
+                    });
+                    handleRefresh();
+                  }}
+                >
+                  New Words
+                </button>
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -118,7 +232,7 @@ export function TypingTest() {
             <span className={styles.statValue}>{currentAccuracy}%</span>
             <span className={styles.statLabel}>Accuracy</span>
           </div>
-          {configWordCount !== null && (
+          {configWordCount !== null && !isLessonSession && (
             <div className={styles.stat}>
               <span className={styles.statValue}>
                 {wordsCompleted}/{configWordCount}
@@ -126,7 +240,7 @@ export function TypingTest() {
               <span className={styles.statLabel}>Words</span>
             </div>
           )}
-          {configMaxErrors !== null && (
+          {configMaxErrors !== null && !isLessonSession && (
             <div className={styles.stat}>
               <span className={styles.statValue}>
                 {erroredWords}/{configMaxErrors}
@@ -184,16 +298,18 @@ export function TypingTest() {
           >
             Reset
           </button>
-          <button
-            type="button"
-            className={styles.controlBtn}
-            onClick={() => {
-              logger.info("Test refreshed", { wpm: currentWpm });
-              handleRefresh();
-            }}
-          >
-            Refresh
-          </button>
+          {!isLessonSession && (
+            <button
+              type="button"
+              className={styles.controlBtn}
+              onClick={() => {
+                logger.info("Test refreshed", { wpm: currentWpm });
+                handleRefresh();
+              }}
+            >
+              Refresh
+            </button>
+          )}
         </div>
       )}
 

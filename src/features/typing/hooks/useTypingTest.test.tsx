@@ -3,7 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
-import { startFromHome } from "@/features/typing/state/typingSlice";
+import {
+  startFromHome,
+  startLessonSession,
+} from "@/features/typing/state/typingSlice";
+import { SessionTypeValue } from "@/features/history/state/historyTypes";
 import { useTypingTest } from "./useTypingTest";
 
 function createTestStore() {
@@ -66,6 +70,29 @@ function renderInTestView(store?: ReturnType<typeof createTestStore>) {
       </Provider>,
     ),
     store: testStore,
+  };
+}
+
+function renderInLessonView(
+  store: ReturnType<typeof createTestStore>,
+  targetText: string,
+  lessonUnitOrder = 0,
+) {
+  store.dispatch(
+    startLessonSession({
+      targetText,
+      sessionType: SessionTypeValue.LessonUnit,
+      lessonSlug: "lesson-a",
+      lessonUnitOrder,
+    }),
+  );
+  return {
+    ...render(
+      <Provider store={store}>
+        <TestComponent />
+      </Provider>,
+    ),
+    store,
   };
 }
 
@@ -568,5 +595,55 @@ describe("useTypingTest", () => {
       expect(point).toBeDefined();
       expect(state.wpm).toBe(point!.wpm);
     }
+  });
+
+  it("ignores the configured word limit during a lesson session", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setWordCount", payload: 1 });
+    store.dispatch({ type: "typingConfig/setDuration", payload: null });
+    store.dispatch({ type: "typingConfig/setMaxErrors", payload: null });
+    renderInLessonView(store, "hello world foo");
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "hello ");
+    });
+
+    expect(screen.getByTestId("status")).toHaveTextContent("active");
+
+    await act(async () => {
+      await user.type(input, "world foo");
+    });
+
+    expect(screen.getByTestId("status")).toHaveTextContent("completed");
+  });
+
+  it("ignores the configured max errors limit during a lesson session", async () => {
+    const store = createTestStore();
+    store.dispatch({ type: "typingConfig/setMaxErrors", payload: 1 });
+    store.dispatch({ type: "typingConfig/setDuration", payload: null });
+    store.dispatch({ type: "typingConfig/setWordCount", payload: null });
+    renderInLessonView(store, "ab");
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByTestId("input");
+
+    await act(async () => {
+      await user.type(input, "z");
+    });
+
+    expect(screen.getByTestId("status")).toHaveTextContent("active");
+
+    await act(async () => {
+      await user.type(input, "a");
+    });
+
+    expect(screen.getByTestId("status")).toHaveTextContent("completed");
+  });
+
+  it("keeps the timer unlimited during a lesson session", async () => {
+    const store = createTestStore();
+    renderInLessonView(store, "hello world foo");
+    expect(screen.getByTestId("time")).toHaveTextContent("unlimited");
   });
 });

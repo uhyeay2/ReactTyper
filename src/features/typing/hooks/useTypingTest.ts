@@ -28,6 +28,7 @@ import {
   selectLiveWpmReady,
   selectWpmTimeline,
   selectFixedChars,
+  selectIsLessonSession,
 } from "../state/typingSlice";
 import {
   selectCurrentWpm,
@@ -45,6 +46,7 @@ import { computeBackspaceBoundary } from "../utils/backspaceBoundary";
 import { useTimer } from "./useTimer";
 import { recordResult } from "@/features/history/state/historySlice";
 import { buildRecordPayload } from "@/features/history/utils/buildRecordPayload";
+import { isLessonSessionType } from "@/features/history/utils/sessionType";
 
 const WORD_BUFFER_SIZE = 20;
 const DEFAULT_WORD_COUNT = 50;
@@ -80,6 +82,7 @@ export function useTypingTest() {
   const configDuration = useAppSelector(selectDuration);
   const configMaxWords = useAppSelector(selectWordCount);
   const configMaxErrors = useAppSelector(selectMaxErrors);
+  const isLessonSession = useAppSelector(selectIsLessonSession);
 
   const fixedCharsRef = useRef("");
   const correctCharsRef = useRef(0);
@@ -87,12 +90,12 @@ export function useTypingTest() {
   const totalTypedRef = useRef(0);
   const backspaceBoundaryRef = useRef(0);
 
-  const testDuration = configDuration;
+  const testDuration = isLessonSession ? null : configDuration;
 
   useEffect(() => {
     if (status !== "active") return;
 
-    if (configMaxWords !== null) return;
+    if (configMaxWords !== null || isLessonSession) return;
 
     const charsRemaining = targetText.length - currentIndex;
     if (charsRemaining < WORD_BUFFER_SIZE * 6) {
@@ -104,7 +107,7 @@ export function useTypingTest() {
         }),
       );
     }
-  }, [currentIndex, targetText, status, dispatch, configMaxWords]);
+  }, [currentIndex, targetText, status, dispatch, configMaxWords, isLessonSession]);
 
   useEffect(() => {
     if (status !== "active") return;
@@ -144,17 +147,21 @@ export function useTypingTest() {
 
     if (authStatus === "authenticated") {
       const targetWordCount = countTypedWords(finalTarget);
+      const isLesson = isLessonSessionType(sessionContext.sessionType);
+      const recordConfig = isLesson
+        ? { duration: null, wordCount: null, maxErrors: null, isZenMode: false }
+        : {
+            duration: config.duration,
+            wordCount: config.wordCount,
+            maxErrors: config.maxErrors,
+            isZenMode: config.isZenMode,
+          };
       dispatch(
         recordResult(
           buildRecordPayload({
             results,
             sessionContext,
-            config: {
-              duration: config.duration,
-              wordCount: config.wordCount,
-              maxErrors: config.maxErrors,
-              isZenMode: config.isZenMode,
-            },
+            config: recordConfig,
             targetWordCount,
             wpmTimeline,
           }),
@@ -219,6 +226,7 @@ export function useTypingTest() {
       const currentTarget = typingStore.getState().typing.targetText;
 
       if (
+        !isLessonSession &&
         configMaxWords !== null &&
         countTypedWords(newTyped) >= configMaxWords
       ) {
@@ -226,7 +234,7 @@ export function useTypingTest() {
         return true;
       }
 
-      if (configMaxErrors !== null) {
+      if (!isLessonSession && configMaxErrors !== null) {
         const wordErrors = countWordsWithErrors(
           currentTarget,
           newTyped,
@@ -240,7 +248,13 @@ export function useTypingTest() {
 
       return false;
     },
-    [configMaxWords, configMaxErrors, handleTestComplete, typingStore],
+    [
+      isLessonSession,
+      configMaxWords,
+      configMaxErrors,
+      handleTestComplete,
+      typingStore,
+    ],
   );
 
   const handleKeyDown = useCallback(

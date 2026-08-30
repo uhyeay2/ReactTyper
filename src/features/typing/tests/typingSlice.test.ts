@@ -21,11 +21,14 @@ import typingReducer, {
   selectLiveWpmReady,
   selectWpmTimeline,
   selectKeystrokes,
+  selectSessionContext,
+  selectIsLessonSession,
   pauseTest,
   resumeTest,
   selectFinalErrors,
 } from "../state/typingSlice";
 import type { TypingState } from "../state/typingTypes";
+import { SessionTypeValue } from "@/features/history/state/historyTypes";
 
 const initialState: TypingState = {
   view: "home",
@@ -173,6 +176,28 @@ describe("typingSlice", () => {
       expect(state.currentIndex).toBe(0);
       expect(state.targetText).toBe("the quick brown fox");
     });
+
+    it("preserves the session context", () => {
+      const state = typingReducer(
+        {
+          ...initialState,
+          status: "active",
+          sessionContext: {
+            sessionType: SessionTypeValue.LessonUnit,
+            lessonSlug: "lesson-a",
+            lessonUnitOrder: 1,
+            wordBankSlug: null,
+          },
+        },
+        resetToReady(),
+      );
+      expect(state.sessionContext).toEqual({
+        sessionType: SessionTypeValue.LessonUnit,
+        lessonSlug: "lesson-a",
+        lessonUnitOrder: 1,
+        wordBankSlug: null,
+      });
+    });
   });
 
   describe("refreshTest", () => {
@@ -233,6 +258,57 @@ describe("typingSlice", () => {
     it("selectView returns view", () => {
       const state = { typing: { ...initialState, view: "test" as const } };
       expect(selectView(state)).toBe("test");
+    });
+
+    it("selectSessionContext returns the session context", () => {
+      const sessionContext = {
+        sessionType: SessionTypeValue.LessonUnit,
+        lessonSlug: "lesson-a",
+        lessonUnitOrder: 0,
+        wordBankSlug: null,
+      };
+      const state = { typing: { ...initialState, sessionContext } };
+      expect(selectSessionContext(state)).toEqual(sessionContext);
+    });
+
+    it("selectIsLessonSession is false for a typing test session", () => {
+      const state = {
+        typing: {
+          ...initialState,
+          sessionContext: { ...initialState.sessionContext, sessionType: 0 },
+        },
+      };
+      expect(selectIsLessonSession(state)).toBe(false);
+    });
+
+    it("selectIsLessonSession is true for a lesson unit session", () => {
+      const state = {
+        typing: {
+          ...initialState,
+          sessionContext: {
+            sessionType: SessionTypeValue.LessonUnit,
+            lessonSlug: "lesson-a",
+            lessonUnitOrder: 0,
+            wordBankSlug: null,
+          },
+        },
+      };
+      expect(selectIsLessonSession(state)).toBe(true);
+    });
+
+    it("selectIsLessonSession is true for a lesson session", () => {
+      const state = {
+        typing: {
+          ...initialState,
+          sessionContext: {
+            sessionType: SessionTypeValue.Lesson,
+            lessonSlug: "lesson-a",
+            lessonUnitOrder: null,
+            wordBankSlug: null,
+          },
+        },
+      };
+      expect(selectIsLessonSession(state)).toBe(true);
     });
   });
 
