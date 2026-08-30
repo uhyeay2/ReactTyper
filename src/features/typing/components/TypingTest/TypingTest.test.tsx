@@ -147,7 +147,7 @@ describe("TypingTest", () => {
 
   it("renders ready state with prompt text", () => {
     renderInTestView();
-    expect(screen.getByText("Type Test")).toBeInTheDocument();
+    expect(screen.getByText("Typing Test")).toBeInTheDocument();
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
   });
 
@@ -666,5 +666,23 @@ describe("TypingTest", () => {
     expect(screen.queryByText("Words")).not.toBeInTheDocument();
     expect(screen.queryByText("Errors")).not.toBeInTheDocument();
     expect(screen.queryByText("Refresh")).not.toBeInTheDocument();
+  });
+
+  it("shows the lesson and unit titles during a lesson session", async () => {
+    const store = createTestStore();
+    renderLessonSession(store, "first unit words here", 0);
+
+    await waitFor(() => {
+      expect(apiGetLessonMock).toHaveBeenCalledWith("lesson-a");
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByText("Typing Lesson: Lesson A"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Unit 1: Unit One")).toBeInTheDocument();
+    expect(screen.queryByText("Typing Test")).not.toBeInTheDocument();
   });
 });

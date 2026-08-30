@@ -10,7 +10,7 @@ import {
 import { formatConfigSummary } from "@/features/typingConfig/utils/formatConfigSummary";
 import { SessionTypeValue } from "@/features/history/state/historyTypes";
 import { apiGetLesson } from "@/features/lessons/services/lessonsApi";
-import type { LessonUnit } from "@/features/lessons/state/lessonTypes";
+import type { LessonDetail } from "@/features/lessons/state/lessonTypes";
 import {
   navigateHome,
   startLessonSession,
@@ -63,18 +63,18 @@ export function TypingTest() {
     handleRefresh,
   } = useTypingTest();
 
-  const [lessonUnits, setLessonUnits] = useState<LessonUnit[] | null>(null);
+  const [lessonDetail, setLessonDetail] = useState<LessonDetail | null>(null);
   const [nextUnitError, setNextUnitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLessonSession || status !== "completed") return;
+    if (!isLessonSession) return;
     const slug = sessionContext.lessonSlug;
     if (slug === null) return;
     let cancelled = false;
     apiGetLesson(slug)
       .then((lesson) => {
         if (cancelled) return;
-        setLessonUnits(lesson.units);
+        setLessonDetail(lesson);
         setNextUnitError(null);
       })
       .catch(() => {
@@ -84,14 +84,23 @@ export function TypingTest() {
     return () => {
       cancelled = true;
     };
-  }, [isLessonSession, status, sessionContext.lessonSlug]);
+  }, [isLessonSession, sessionContext.lessonSlug]);
 
+  const lessonUnits = lessonDetail?.units ?? null;
   const currentUnitOrder = sessionContext.lessonUnitOrder;
+  const currentUnitNumber = currentUnitOrder !== null ? currentUnitOrder + 1 : null;
 
   const nextUnit = useMemo(() => {
     if (lessonUnits === null || currentUnitOrder === null) return null;
     return (
       lessonUnits.find((unit) => unit.order === currentUnitOrder + 1) ?? null
+    );
+  }, [lessonUnits, currentUnitOrder]);
+
+  const currentUnit = useMemo(() => {
+    if (lessonUnits === null || currentUnitOrder === null) return null;
+    return (
+      lessonUnits.find((unit) => unit.order === currentUnitOrder) ?? null
     );
   }, [lessonUnits, currentUnitOrder]);
 
@@ -133,7 +142,18 @@ export function TypingTest() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Type Test</h1>
+        {isLessonSession ? (
+          <>
+            <h1 className={styles.title}>
+              Typing Lesson: {lessonDetail?.title ?? ""}
+            </h1>
+            <p className={styles.subtitle}>
+              Unit {currentUnitNumber}: {currentUnit?.title ?? ""}
+            </p>
+          </>
+        ) : (
+          <h1 className={styles.title}>Typing Test</h1>
+        )}
       </div>
 
       {isCompleted && results && (
