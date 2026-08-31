@@ -1,0 +1,132 @@
+.keyboardWrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  user-select: none;
+}
+
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.keyboardRow {
+  display: flex;
+  gap: 4px;
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: inherit;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.keyActive {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 12px var(--primary), 0 0 4px var(--primary);
+}
+
+.keyShiftActive {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
+}
+
+.keySpecial {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+.handsOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* The hands are positioned in overlay pixels computed from the rendered
+   keyboard geometry. The hand SVG uses a 20-unit grid per key/row and is
+   rendered at 2x (200x280px), so its finger centers land on the home-row key
+   centers (A S D F on the left, J K L ; on the right) of a 596px-wide keyboard
+   (keys pitched 40px). `top: 12px` seats the fingertips over the home row. */
+.handAnchorLeft,
+.handAnchorRight {
+  position: absolute;
+  display: block;
+  top: 12px;
+}
+
+.handAnchorLeft {
+  left: 72px;
+}
+
+.handAnchorRight {
+  left: 288px;
+}
+
+.handSvg {
+  display: block;
+  width: 200px;
+  height: 280px;
+  /* Allow an active finger to extend beyond the hand silhouette toward its key
+     (e.g. the left index reaching 'b') without being clipped by the viewBox. */
+  overflow: visible;
+}
+
+.handSvg g {
+  transition: transform 0.15s ease-out;
+}
+
+.handSvg rect {
+  transition:
+    opacity 0.15s ease-out,
+    fill 0.15s ease-out,
+    filter 0.15s ease-out;
+}
+
+.fingerActive {
+  opacity: 0.85;
+  fill: var(--primary);
+  filter: drop-shadow(0 0 6px var(--primary));
+}
+
+.fingerInactive {
+  opacity: 0.18;
+  fill: var(--text);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -8,6 +8,7 @@ import {
   selectIsZenMode,
   selectWordBankSlug,
 } from "@/features/typingConfig/state/typingConfigSlice";
+import { usePersistedBoolean } from "@/shared/hooks/usePersistedBoolean";
 import { formatConfigSummary } from "@/features/typingConfig/utils/formatConfigSummary";
 import { SessionTypeValue } from "@/features/history/state/historyTypes";
 import { apiGetLesson } from "@/features/lessons/services/lessonsApi";
@@ -22,6 +23,7 @@ import { useTypingTest } from "../../hooks/useTypingTest";
 import { TypingDisplay } from "../TypingDisplay/TypingDisplay";
 import { TypingInput } from "../TypingInput/TypingInput";
 import { LiveWpm } from "../LiveWpm/LiveWpm";
+import { VirtualKeyboard } from "../VirtualKeyboard/VirtualKeyboard";
 import { ResultsDisplay } from "../ResultsDisplay/ResultsDisplay";
 import { TestConfigOptions } from "@/shared/components/TestConfigOptions/TestConfigOptions";
 import { CollapsibleSection } from "@/shared/components/CollapsibleSection/CollapsibleSection";
@@ -29,6 +31,7 @@ import { logger } from "@/infrastructure/logging/logger";
 import styles from "./TypingTest.module.css";
 
 const TEST_SETTINGS_STORAGE_KEY = "reacttyper-results-test-settings";
+const KEYBOARD_GUIDE_STORAGE_KEY = "reacttyper-keyboard-guide-enabled";
 
 export function TypingTest() {
   const configDuration = useAppSelector(selectDuration);
@@ -40,6 +43,10 @@ export function TypingTest() {
   const navigate = useNavigate();
   const isLessonSession = useAppSelector(selectIsLessonSession);
   const sessionContext = useAppSelector(selectSessionContext);
+  const [showGuide, setShowGuide] = usePersistedBoolean(
+    KEYBOARD_GUIDE_STORAGE_KEY,
+    true,
+  );
 
   const {
     status,
@@ -281,8 +288,17 @@ export function TypingTest() {
         {showDisplay && <TypingDisplay />}
       </TypingInput>
 
+      {showDisplay && showGuide && <VirtualKeyboard />}
+
       {showDisplay && (
         <div className={styles.controls}>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => setShowGuide(!showGuide)}
+          >
+            {showGuide ? "Hide Keyboard" : "Show Keyboard Guide"}
+          </button>
           {status === "active" && (
             <button
               type="button"
