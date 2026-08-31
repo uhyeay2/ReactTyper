@@ -49,11 +49,14 @@ function installMatchMedia() {
   );
 }
 
-function renderApp(store: ReturnType<typeof createStore>) {
+function renderApp(
+  store: ReturnType<typeof createStore>,
+  initialPath = "/",
+) {
   return render(
     <Provider store={store}>
       <ThemeProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[initialPath]}>
           <App />
         </MemoryRouter>
       </ThemeProvider>
@@ -67,19 +70,26 @@ describe("App", () => {
     localStorage.clear();
   });
 
-  it("renders the home screen by default", () => {
+  it("renders the landing page by default", () => {
     installMatchMedia();
     renderApp(createStore());
     expect(
-      screen.getByText("Test your typing speed and accuracy"),
+      screen.getByText(/Improve your typing speed and accuracy/),
     ).toBeInTheDocument();
+  });
+
+  it("renders the test settings at /test", () => {
+    installMatchMedia();
+    const store = createStore();
+    renderApp(store, "/test");
+    expect(screen.getByText("Test your typing speed and accuracy")).toBeInTheDocument();
   });
 
   it("renders the typing test when the test view is active", () => {
     installMatchMedia();
     const store = createStore();
     store.dispatch(startFromHome({ wordCount: 25 }));
-    renderApp(store);
+    renderApp(store, "/test");
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
   });
 });

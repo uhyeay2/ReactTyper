@@ -6,11 +6,11 @@ import {
   selectWordBankSlug,
 } from "@/features/typingConfig/state/typingConfigSlice";
 import { TestConfigOptions } from "@/shared/components/TestConfigOptions/TestConfigOptions";
-import styles from "./HomeScreen.module.css";
+import styles from "./TestSetupScreen.module.css";
 
 const DEFAULT_WORD_COUNT = 50;
 
-export function HomeScreen() {
+export function TestSetupScreen() {
   const dispatch = useAppDispatch();
   const configWordCount = useAppSelector(selectWordCount);
   const configWordBankSlug = useAppSelector(selectWordBankSlug);

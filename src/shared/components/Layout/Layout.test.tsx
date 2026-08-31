@@ -93,4 +93,34 @@ describe("Layout", () => {
 
     expect(store.getState().typing.view).toBe("home");
   });
+
+  it("renders a Typing Test nav link before Lessons", () => {
+    installMatchMedia();
+    renderLayout(createStore());
+
+    const typingLink = screen.getByRole("link", { name: "Typing Test" });
+    const lessonsLink = screen.getByRole("link", { name: "Lessons" });
+
+    expect(typingLink).toHaveAttribute("href", "/test");
+
+    const nav = typingLink.parentElement;
+    expect(nav).not.toBeNull();
+    expect(lessonsLink.parentElement).toBe(nav);
+    expect(
+      Array.from(nav!.children).indexOf(typingLink),
+    ).toBeLessThan(Array.from(nav!.children).indexOf(lessonsLink));
+  });
+
+  it("resets the typing view to home when Typing Test is clicked", () => {
+    installMatchMedia();
+    const store = createStore();
+    store.dispatch(startFromHome({ wordCount: 25 }));
+    renderLayout(store);
+
+    expect(store.getState().typing.view).toBe("test");
+
+    fireEvent.click(screen.getByRole("link", { name: "Typing Test" }));
+
+    expect(store.getState().typing.view).toBe("home");
+  });
 });

@@ -288,8 +288,6 @@ export function TypingTest() {
         {showDisplay && <TypingDisplay />}
       </TypingInput>
 
-      {showDisplay && showGuide && <VirtualKeyboard />}
-
       {showDisplay && (
         <div className={styles.controls}>
           <button
@@ -351,6 +349,8 @@ export function TypingTest() {
           )}
         </div>
       )}
+
+      {showDisplay && showGuide && <VirtualKeyboard />}
 
       {isCompleted && results && (
         <ResultsDisplay

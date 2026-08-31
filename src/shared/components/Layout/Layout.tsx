@@ -44,6 +44,13 @@ export function Layout({ children }: LayoutProps) {
         </button>
 
         <nav className={styles.nav}>
+          <Link
+            className={styles.navLink}
+            to="/test"
+            onClick={() => dispatch(navigateHome())}
+          >
+            Typing Test
+          </Link>
           <Link className={styles.navLink} to="/lessons">
             Lessons
           </Link>

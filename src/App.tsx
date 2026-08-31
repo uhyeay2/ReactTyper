@@ -4,7 +4,8 @@ import { useAppSelector } from "@/app/hooks";
 import { selectView } from "@/features/typing/state/typingSlice";
 import { Layout } from "@/shared/components/Layout/Layout";
 import { TypingTest } from "@/features/typing/components/TypingTest/TypingTest";
-import { HomeScreen } from "@/features/home/components/HomeScreen/HomeScreen";
+import { TestSetupScreen } from "@/features/typing/components/TestSetupScreen/TestSetupScreen";
+import { LandingPage } from "@/features/home/components/LandingPage/LandingPage";
 import { LoginScreen } from "@/features/auth/components/LoginScreen/LoginScreen";
 import { RegisterScreen } from "@/features/auth/components/RegisterScreen/RegisterScreen";
 import { LessonsScreen } from "@/features/lessons/components/LessonsScreen/LessonsScreen";
@@ -17,9 +18,9 @@ import {
   selectIsAdmin,
 } from "@/features/auth/state/authSlice";
 
-function HomeOrTest() {
+function TestFlow() {
   const view = useAppSelector(selectView);
-  return view === "home" ? <HomeScreen /> : <TypingTest />;
+  return view === "home" ? <TestSetupScreen /> : <TypingTest />;
 }
 
 interface GuardProps {
@@ -50,7 +51,8 @@ export function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<HomeOrTest />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/test" element={<TestFlow />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/lessons" element={<LessonsScreen />} />

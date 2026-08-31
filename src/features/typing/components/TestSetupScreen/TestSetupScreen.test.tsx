@@ -6,7 +6,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
 import { apiListWordBanks } from "@/features/typingConfig/services/wordBanksApi";
 import { loadWordBankWords } from "@/features/typing/utils/wordBankLoader";
-import { HomeScreen } from "./HomeScreen";
+import { TestSetupScreen } from "./TestSetupScreen";
 
 vi.mock("@/features/typingConfig/services/wordBanksApi", () => ({
   apiListWordBanks: vi.fn(),
@@ -35,14 +35,14 @@ function renderWithStore(store?: ReturnType<typeof createTestStore>) {
   return {
     ...render(
       <Provider store={testStore}>
-        <HomeScreen />
+        <TestSetupScreen />
       </Provider>,
     ),
     store: testStore,
   };
 }
 
-describe("HomeScreen", () => {
+describe("TestSetupScreen", () => {
   it("renders title and subtitle", () => {
     renderWithStore();
     expect(screen.getByText("ReactTyper")).toBeInTheDocument();
