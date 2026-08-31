@@ -76,3 +76,64 @@
 .customInput::placeholder {
   color: var(--text-muted);
 }
+
+.bankGroup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.bankInput {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.bankInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.bankInput::placeholder {
+  color: var(--text-muted);
+}
+
+.bankList {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-secondary, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.bankList li {
+  width: 100%;
+}
+
+.bankList li .presetBtn {
+  width: 100%;
+  text-align: left;
+}
+
+.errorHint {
+  font-size: 12px;
+  color: var(--danger, #e5484d);
+}

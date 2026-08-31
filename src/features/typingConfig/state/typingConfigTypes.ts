@@ -3,4 +3,5 @@ export interface TypingConfigState {
   wordCount: number | null;
   maxErrors: number | null;
   isZenMode: boolean;
+  wordBankSlug: string | null;
 }

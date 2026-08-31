@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
@@ -6,7 +6,29 @@ import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
 import { startFromHome } from "@/features/typing/state/typingSlice";
 import { ThemeProvider } from "@/features/theme/providers/ThemeProvider";
+import { apiListWordBanks } from "@/features/typingConfig/services/wordBanksApi";
+import { loadWordBankWords } from "@/features/typing/utils/wordBankLoader";
 import { App } from "@/App";
+
+vi.mock("@/features/typingConfig/services/wordBanksApi", () => ({
+  apiListWordBanks: vi.fn(),
+  apiGetWordBank: vi.fn(),
+}));
+
+vi.mock("@/features/typing/utils/wordBankLoader", () => ({
+  loadWordBankWords: vi.fn(),
+  clearWordBankCache: vi.fn(),
+}));
+
+const mockedApiListWordBanks = vi.mocked(apiListWordBanks);
+const mockedLoadWordBankWords = vi.mocked(loadWordBankWords);
+
+beforeEach(() => {
+  mockedApiListWordBanks.mockReset();
+  mockedLoadWordBankWords.mockReset();
+  mockedApiListWordBanks.mockReturnValue(new Promise(() => {}));
+  mockedLoadWordBankWords.mockResolvedValue(true);
+});
 
 function createStore() {
   return configureStore({ reducer: rootReducer });

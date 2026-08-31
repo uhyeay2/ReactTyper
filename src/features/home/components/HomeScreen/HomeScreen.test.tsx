@@ -1,9 +1,30 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, vi } from "vitest";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
+import { apiListWordBanks } from "@/features/typingConfig/services/wordBanksApi";
+import { loadWordBankWords } from "@/features/typing/utils/wordBankLoader";
 import { HomeScreen } from "./HomeScreen";
+
+vi.mock("@/features/typingConfig/services/wordBanksApi", () => ({
+  apiListWordBanks: vi.fn(),
+  apiGetWordBank: vi.fn(),
+}));
+
+vi.mock("@/features/typing/utils/wordBankLoader", () => ({
+  loadWordBankWords: vi.fn(),
+  clearWordBankCache: vi.fn(),
+}));
+
+const mockedApiListWordBanks = vi.mocked(apiListWordBanks);
+const mockedLoadWordBankWords = vi.mocked(loadWordBankWords);
+
+beforeEach(() => {
+  mockedApiListWordBanks.mockReset().mockReturnValue(new Promise(() => {}));
+  mockedLoadWordBankWords.mockReset().mockResolvedValue(true);
+});
 
 function createTestStore() {
   return configureStore({ reducer: rootReducer });

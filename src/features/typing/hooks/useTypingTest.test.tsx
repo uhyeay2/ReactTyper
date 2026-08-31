@@ -1,4 +1,4 @@
-import { render, screen, act, fireEvent } from "@testing-library/react";
+﻿import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
@@ -115,9 +115,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "a");
-    });
+    await user.type(input, "a");
 
     expect(screen.getByTestId("status")).toHaveTextContent("active");
     expect(screen.getByTestId("typed")).toHaveTextContent("a");
@@ -129,9 +127,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "abc");
-    });
+    await user.type(input, "abc");
 
     expect(screen.getByTestId("status")).toHaveTextContent("active");
     expect(screen.getByTestId("typed")).toHaveTextContent("abc");
@@ -151,9 +147,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "abc");
-    });
+    await user.type(input, "abc");
 
     expect(screen.getByTestId("status")).toHaveTextContent("active");
     expect(screen.getByTestId("typed")).toHaveTextContent("abc");
@@ -165,9 +159,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "abc{Backspace}");
-    });
+    await user.type(input, "abc{Backspace}");
 
     expect(screen.getByTestId("typed")).toHaveTextContent("ab");
     expect(screen.getByTestId("index")).toHaveTextContent("2");
@@ -178,16 +170,12 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "aa bb cc d");
-    });
+    await user.type(input, "aa bb cc d");
 
     expect(screen.getByTestId("typed")).toHaveTextContent("aa bb cc d");
     expect(screen.getByTestId("index")).toHaveTextContent("10");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}".repeat(8));
-    });
+    await user.type(input, "{Backspace}".repeat(8));
 
     expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
     expect(screen.getByTestId("index")).toHaveTextContent("5");
@@ -198,19 +186,13 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "aa bb cc d");
-    });
+    await user.type(input, "aa bb cc d");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}".repeat(8));
-    });
+    await user.type(input, "{Backspace}".repeat(8));
 
     expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}");
-    });
+    await user.type(input, "{Backspace}");
 
     expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
     expect(screen.getByTestId("index")).toHaveTextContent("5");
@@ -221,15 +203,11 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "aa bb");
-    });
+    await user.type(input, "aa bb");
 
     expect(screen.getByTestId("index")).toHaveTextContent("5");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}".repeat(5));
-    });
+    await user.type(input, "{Backspace}".repeat(5));
 
     expect(screen.getByTestId("typed")).toHaveTextContent("");
     expect(screen.getByTestId("index")).toHaveTextContent("0");
@@ -240,25 +218,17 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "aa bb cc d");
-    });
+    await user.type(input, "aa bb cc d");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}".repeat(8));
-    });
+    await user.type(input, "{Backspace}".repeat(8));
 
     expect(screen.getByTestId("typed")).toHaveTextContent("aa bb");
 
-    await act(async () => {
-      await user.type(input, " cc");
-    });
+    await user.type(input, " cc");
 
     expect(screen.getByTestId("typed")).toHaveTextContent("aa bb cc");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}".repeat(6));
-    });
+    await user.type(input, "{Backspace}".repeat(6));
 
     expect(screen.getByTestId("typed")).toHaveTextContent("aa");
     expect(screen.getByTestId("index")).toHaveTextContent("2");
@@ -269,9 +239,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}");
-    });
+    await user.type(input, "{Backspace}");
 
     expect(screen.getByTestId("status")).toHaveTextContent("ready");
     expect(screen.getByTestId("index")).toHaveTextContent("0");
@@ -282,9 +250,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "{Backspace}");
-    });
+    await user.type(input, "{Backspace}");
 
     expect(screen.getByTestId("status")).toHaveTextContent("ready");
     expect(screen.getByTestId("index")).toHaveTextContent("0");
@@ -295,9 +261,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "{Shift}");
-    });
+    await user.type(input, "{Shift}");
 
     expect(screen.getByTestId("status")).toHaveTextContent("ready");
     expect(screen.getByTestId("index")).toHaveTextContent("0");
@@ -308,9 +272,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "abc");
-    });
+    await user.type(input, "abc");
 
     expect(screen.getByTestId("status")).toHaveTextContent("active");
 
@@ -330,9 +292,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, `${target.charAt(0)}${target.charAt(1)}`);
-    });
+    await user.type(input, `${target.charAt(0)}${target.charAt(1)}`);
 
     expect(screen.getByTestId("accuracy")).toHaveTextContent("100");
   });
@@ -384,9 +344,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, `${words[0]} ${words[1]} `);
-    });
+    await user.type(input, `${words[0]} ${words[1]} `);
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
   });
@@ -405,9 +363,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, `${target.charAt(0)}${wrong}${target.charAt(2)}`);
-    });
+    await user.type(input, `${target.charAt(0)}${wrong}${target.charAt(2)}`);
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
   });
@@ -419,9 +375,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, `${target.charAt(0)}${target.charAt(1)}`);
-    });
+    await user.type(input, `${target.charAt(0)}${target.charAt(1)}`);
 
     act(() => {
       screen.getByTestId("quit").click();
@@ -440,9 +394,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, `${target.charAt(0)}${wrong}`);
-    });
+    await user.type(input, `${target.charAt(0)}${wrong}`);
 
     act(() => {
       screen.getByTestId("quit").click();
@@ -467,9 +419,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, target);
-    });
+    await user.type(input, target);
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
   });
@@ -480,9 +430,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "abc");
-    });
+    await user.type(input, "abc");
 
     const keystrokes = store.getState().typing.keystrokes;
     expect(keystrokes).toHaveLength(3);
@@ -502,9 +450,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "ab{Backspace}");
-    });
+    await user.type(input, "ab{Backspace}");
 
     const keystrokes = store.getState().typing.keystrokes;
     expect(keystrokes).toHaveLength(1);
@@ -516,9 +462,7 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "abc");
-    });
+    await user.type(input, "abc");
 
     expect(screen.getByTestId("live-wpm")).toHaveTextContent("0");
   });
@@ -534,9 +478,7 @@ describe("useTypingTest", () => {
 
     expect(screen.getByTestId("live-ready")).toHaveTextContent("loading");
 
-    await act(async () => {
-      await user.type(input, target.slice(0, 12));
-    });
+    await user.type(input, target.slice(0, 12));
 
     expect(screen.getByTestId("live-ready")).toHaveTextContent("ready");
     expect(Number(screen.getByTestId("live-wpm").textContent)).toBeGreaterThan(
@@ -558,9 +500,7 @@ describe("useTypingTest", () => {
     });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, `${words[0]} ${words[1]} `);
-    });
+    await user.type(input, `${words[0]} ${words[1]} `);
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
     const state = store.getState().typing;
@@ -582,9 +522,7 @@ describe("useTypingTest", () => {
     });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, `${words[0]} ${words[1]} `);
-    });
+    await user.type(input, `${words[0]} ${words[1]} `);
 
     const { wpmTimeline, results } = store.getState().typing;
     expect(wpmTimeline.length).toBeGreaterThan(0);
@@ -606,15 +544,11 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "hello ");
-    });
+    await user.type(input, "hello ");
 
     expect(screen.getByTestId("status")).toHaveTextContent("active");
 
-    await act(async () => {
-      await user.type(input, "world foo");
-    });
+    await user.type(input, "world foo");
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
   });
@@ -628,15 +562,11 @@ describe("useTypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByTestId("input");
 
-    await act(async () => {
-      await user.type(input, "z");
-    });
+    await user.type(input, "z");
 
     expect(screen.getByTestId("status")).toHaveTextContent("active");
 
-    await act(async () => {
-      await user.type(input, "a");
-    });
+    await user.type(input, "a");
 
     expect(screen.getByTestId("status")).toHaveTextContent("completed");
   });

@@ -6,6 +6,7 @@ import {
   selectWordCount,
   selectMaxErrors,
   selectIsZenMode,
+  selectWordBankSlug,
 } from "@/features/typingConfig/state/typingConfigSlice";
 import { formatConfigSummary } from "@/features/typingConfig/utils/formatConfigSummary";
 import { SessionTypeValue } from "@/features/history/state/historyTypes";
@@ -33,6 +34,7 @@ export function TypingTest() {
   const configDuration = useAppSelector(selectDuration);
   const configWordCount = useAppSelector(selectWordCount);
   const configMaxErrors = useAppSelector(selectMaxErrors);
+  const configWordBankSlug = useAppSelector(selectWordBankSlug);
   const isZenMode = useAppSelector(selectIsZenMode);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -134,6 +136,7 @@ export function TypingTest() {
     configDuration,
     configWordCount,
     configMaxErrors,
+    configWordBankSlug,
   );
 
   const showCountdown =

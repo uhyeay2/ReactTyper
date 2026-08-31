@@ -52,8 +52,25 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+let activeWordPool: string[] = COMMON_WORDS;
+
+/**
+ * Sets the pool of words used to generate typing text. The pool is swapped
+ * when a word bank is selected; it defaults to a local common-word list when
+ * no bank is chosen.
+ */
+export function setActiveWordPool(words: string[]): void {
+  activeWordPool = words;
+}
+
+/** Restores the default local word pool. Useful for tests that mutate the pool. */
+export function resetActiveWordPool(): void {
+  activeWordPool = COMMON_WORDS;
+  extraWordsPool = [];
+}
+
 export function getRandomWords(count: number): string[] {
-  const shuffled = shuffleArray(COMMON_WORDS);
+  const shuffled = shuffleArray(activeWordPool);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
@@ -65,7 +82,7 @@ let extraWordsPool: string[] = [];
 
 export function getExtraWords(count: number): string {
   if (extraWordsPool.length < count) {
-    extraWordsPool = shuffleArray(COMMON_WORDS);
+    extraWordsPool = shuffleArray(activeWordPool);
   }
   const words = extraWordsPool.splice(0, count);
   return words.join(" ");

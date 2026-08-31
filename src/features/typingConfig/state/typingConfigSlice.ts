@@ -1,11 +1,14 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { TypingConfigState } from "./typingConfigTypes";
 
+const DEFAULT_WORD_BANK_SLUG = "english-top-200";
+
 const initialState: TypingConfigState = {
   duration: 60,
   wordCount: null,
   maxErrors: null,
   isZenMode: false,
+  wordBankSlug: DEFAULT_WORD_BANK_SLUG,
 };
 
 const typingConfigSlice = createSlice({
@@ -41,6 +44,9 @@ const typingConfigSlice = createSlice({
         state.maxErrors = null;
       }
     },
+    setWordBankSlug(state, action: PayloadAction<string | null>) {
+      state.wordBankSlug = action.payload;
+    },
     resetConfig() {
       return initialState;
     },
@@ -52,6 +58,7 @@ export const {
   setWordCount,
   setMaxErrors,
   setZenMode,
+  setWordBankSlug,
   resetConfig,
 } = typingConfigSlice.actions;
 
@@ -67,6 +74,9 @@ export const selectMaxErrors = (state: {
 export const selectIsZenMode = (state: {
   typingConfig: TypingConfigState;
 }) => state.typingConfig.isZenMode;
+export const selectWordBankSlug = (state: {
+  typingConfig: TypingConfigState;
+}) => state.typingConfig.wordBankSlug;
 export const selectTypingConfig = (state: {
   typingConfig: TypingConfigState;
 }) => state.typingConfig;

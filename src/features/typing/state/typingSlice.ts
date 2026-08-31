@@ -49,7 +49,10 @@ const typingSlice = createSlice({
     navigateHome() {
       return { ...initialState };
     },
-    startFromHome(state, action: PayloadAction<{ wordCount: number }>) {
+    startFromHome(
+      state,
+      action: PayloadAction<{ wordCount: number; wordBankSlug?: string | null }>,
+    ) {
       const wc = action.payload.wordCount;
       state.view = "test";
       state.status = "ready";
@@ -69,7 +72,10 @@ const typingSlice = createSlice({
       state.keystrokes = [];
       state.liveWpm = 0;
       state.wpmTimeline = [];
-      state.sessionContext = DEFAULT_SESSION;
+      state.sessionContext = {
+        ...DEFAULT_SESSION,
+        wordBankSlug: action.payload.wordBankSlug ?? null,
+      };
     },
     startLessonSession(
       state,
@@ -114,8 +120,11 @@ const typingSlice = createSlice({
       state.status = "active";
       state.startTime = Date.now();
     },
-    startTest(state, action: PayloadAction<number | undefined>) {
-      const wordCount = action.payload ?? state.wordCount;
+    startTest(
+      state,
+      action: PayloadAction<{ wordCount?: number; wordBankSlug?: string | null }>,
+    ) {
+      const wordCount = action.payload.wordCount ?? state.wordCount;
       return {
         ...initialState,
         view: "test",
@@ -124,6 +133,10 @@ const typingSlice = createSlice({
         wordCount,
         startTime: Date.now(),
         fixedChars: "",
+        sessionContext: {
+          ...DEFAULT_SESSION,
+          wordBankSlug: action.payload.wordBankSlug ?? null,
+        },
       };
     },
     recordWpmSnapshot(state, action: PayloadAction<WpmSnapshot>) {
@@ -226,14 +239,21 @@ const typingSlice = createSlice({
       state.liveWpm = 0;
       state.wpmTimeline = [];
     },
-    refreshTest(state) {
-      const wordCount = state.wordCount;
+    refreshTest(
+      _state,
+      action: PayloadAction<{ wordCount: number; wordBankSlug?: string | null }>,
+    ) {
+      const wordCount = action.payload.wordCount;
       return {
         ...initialState,
         view: "test",
         status: "ready",
         targetText: getTargetText(wordCount),
         wordCount,
+        sessionContext: {
+          ...DEFAULT_SESSION,
+          wordBankSlug: action.payload.wordBankSlug ?? null,
+        },
       };
     },
   },

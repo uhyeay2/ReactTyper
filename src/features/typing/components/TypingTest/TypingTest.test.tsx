@@ -1,4 +1,4 @@
-import { render, screen, act, fireEvent, waitFor } from "@testing-library/react";
+﻿import { render, screen, act, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
@@ -16,6 +16,8 @@ import {
   type ThemeContextValue,
 } from "@/features/theme/providers/ThemeContext";
 import { Layout } from "@/shared/components/Layout/Layout";
+import { apiListWordBanks } from "@/features/typingConfig/services/wordBanksApi";
+import { loadWordBankWords } from "@/features/typing/utils/wordBankLoader";
 import { TypingTest } from "./TypingTest";
 
 vi.mock("@/features/lessons/services/lessonsApi", () => ({
@@ -23,7 +25,24 @@ vi.mock("@/features/lessons/services/lessonsApi", () => ({
   apiListLessons: vi.fn(),
 }));
 
+vi.mock("@/features/typingConfig/services/wordBanksApi", () => ({
+  apiListWordBanks: vi.fn(),
+  apiGetWordBank: vi.fn(),
+}));
+
+vi.mock("@/features/typing/utils/wordBankLoader", () => ({
+  loadWordBankWords: vi.fn(),
+  clearWordBankCache: vi.fn(),
+}));
+
 const apiGetLessonMock = vi.mocked(apiGetLesson);
+const mockedApiListWordBanks = vi.mocked(apiListWordBanks);
+const mockedLoadWordBankWords = vi.mocked(loadWordBankWords);
+
+beforeEach(() => {
+  mockedApiListWordBanks.mockReset().mockReturnValue(new Promise(() => {}));
+  mockedLoadWordBankWords.mockReset().mockResolvedValue(true);
+});
 
 const MOCK_LESSON: LessonDetail = {
   slug: "lesson-a",
@@ -127,9 +146,7 @@ function renderLessonSession(
 async function completeLessonSessionViaQuit() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
   const input = screen.getByLabelText("Typing input");
-  await act(async () => {
-    await user.type(input, "fi");
-  });
+  await user.type(input, "fi");
   act(() => {
     screen.getByText("Quit").click();
   });
@@ -156,9 +173,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "a");
-    });
+    await user.type(input, "a");
 
     expect(
       screen.queryByText("Press any key to start"),
@@ -172,9 +187,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     expect(
       screen.queryByText("Press any key to start"),
@@ -188,9 +201,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "a");
-    });
+    await user.type(input, "a");
 
     expect(screen.getByText("Pause")).toBeInTheDocument();
     expect(screen.getByText("Quit")).toBeInTheDocument();
@@ -203,9 +214,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     expect(screen.getByText("Pause")).toBeInTheDocument();
   });
@@ -215,9 +224,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     const statsBar = screen.getByText("WPM").closest("div");
     expect(statsBar).toBeInTheDocument();
@@ -230,9 +237,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     expect(screen.getByLabelText("Calculating WPM")).toBeInTheDocument();
   });
@@ -242,9 +247,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     expect(screen.getAllByText("60s").length).toBeGreaterThanOrEqual(1);
   });
@@ -254,9 +257,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
@@ -271,9 +272,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
@@ -294,9 +293,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "a");
-    });
+    await user.type(input, "a");
 
     expect(screen.getByLabelText("Typing test text")).toBeInTheDocument();
   });
@@ -306,9 +303,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     act(() => {
       screen.getByText("Pause").click();
@@ -328,9 +323,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
@@ -349,9 +342,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
@@ -377,9 +368,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
@@ -397,9 +386,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
@@ -418,9 +405,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     act(() => {
       fireEvent.click(screen.getByText("Quit"));
@@ -447,9 +432,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     const originalTarget = store.getState().typing.targetText;
 
@@ -466,9 +449,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     const originalTarget = store.getState().typing.targetText;
 
@@ -485,9 +466,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     act(() => {
       screen.getByText("Quit").click();
@@ -502,9 +481,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "ab");
-    });
+    await user.type(input, "ab");
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
@@ -529,9 +506,7 @@ describe("TypingTest", () => {
     renderWithLayoutAndTheme(store);
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "abc");
-    });
+    await user.type(input, "abc");
 
     expect(screen.getByText("Words")).toBeInTheDocument();
     expect(screen.getAllByText(/^0\/25$/).length).toBeGreaterThanOrEqual(1);
@@ -545,9 +520,7 @@ describe("TypingTest", () => {
     renderWithLayoutAndTheme(store);
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "/");
-    });
+    await user.type(input, "/");
 
     expect(screen.getByText("Errors")).toBeInTheDocument();
     expect(screen.getByText(/^1\/5$/)).toBeInTheDocument();
@@ -657,9 +630,7 @@ describe("TypingTest", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByLabelText("Typing input");
 
-    await act(async () => {
-      await user.type(input, "first ");
-    });
+    await user.type(input, "first ");
 
     expect(screen.getByText("WPM")).toBeInTheDocument();
     expect(screen.getByText("Accuracy")).toBeInTheDocument();

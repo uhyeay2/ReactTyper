@@ -1,9 +1,43 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
+import { apiListWordBanks } from "@/features/typingConfig/services/wordBanksApi";
+import { loadWordBankWords } from "@/features/typing/utils/wordBankLoader";
+import * as wordList from "@/features/typing/utils/wordList";
 import { TestConfigOptions } from "./TestConfigOptions";
+
+vi.mock("@/features/typingConfig/services/wordBanksApi", () => ({
+  apiListWordBanks: vi.fn(),
+  apiGetWordBank: vi.fn(),
+}));
+
+vi.mock("@/features/typing/utils/wordBankLoader", () => ({
+  loadWordBankWords: vi.fn(),
+  clearWordBankCache: vi.fn(),
+}));
+
+const mockedApiListWordBanks = vi.mocked(apiListWordBanks);
+const mockedLoadWordBankWords = vi.mocked(loadWordBankWords);
+const resetActiveWordPoolSpy = vi.spyOn(wordList, "resetActiveWordPool");
+
+const WORD_BANKS = [
+  {
+    slug: "english-top-200",
+    name: "English \u2014 200 Most Common",
+    description: "Top 200 words",
+    kind: "Frequency",
+    wordCount: 200,
+  },
+  {
+    slug: "english-top-1000",
+    name: "English Top 1000",
+    description: "Top 1000 words",
+    kind: "Frequency",
+    wordCount: 1000,
+  },
+];
 
 function createTestStore() {
   return configureStore({ reducer: rootReducer });
@@ -22,12 +56,19 @@ function renderWithStore(store?: ReturnType<typeof createTestStore>) {
 }
 
 describe("TestConfigOptions", () => {
+  beforeEach(() => {
+    mockedApiListWordBanks.mockImplementation(() => new Promise(() => {}));
+    mockedLoadWordBankWords.mockResolvedValue(true);
+    resetActiveWordPoolSpy.mockClear();
+  });
+
   it("renders all section labels", () => {
     renderWithStore();
     expect(screen.getByText("Time Limit")).toBeInTheDocument();
     expect(screen.getByText("Word Limit")).toBeInTheDocument();
     expect(screen.getByText("Max Errors")).toBeInTheDocument();
     expect(screen.getByText("Zen Mode")).toBeInTheDocument();
+    expect(screen.getByLabelText("Search word banks")).toBeInTheDocument();
   });
 
   it("renders time preset buttons", () => {
@@ -233,7 +274,9 @@ describe("TestConfigOptions", () => {
 
   it("None button clears the word count", async () => {
     const { store } = renderWithStore();
-    store.dispatch({ type: "typingConfig/setWordCount", payload: 25 });
+    act(() => {
+      store.dispatch({ type: "typingConfig/setWordCount", payload: 25 });
+    });
     const user = userEvent.setup();
 
     await user.click(screen.getAllByText("None")[1]!);
@@ -243,7 +286,9 @@ describe("TestConfigOptions", () => {
 
   it("None button clears the max errors", async () => {
     const { store } = renderWithStore();
-    store.dispatch({ type: "typingConfig/setMaxErrors", payload: 3 });
+    act(() => {
+      store.dispatch({ type: "typingConfig/setMaxErrors", payload: 3 });
+    });
     const user = userEvent.setup();
 
     await user.click(screen.getAllByText("None")[2]!);
@@ -341,4 +386,122 @@ describe("TestConfigOptions", () => {
 
     expect(store.getState().typingConfig.duration).toBe(90);
   });
+
+  it("loads word banks and lets the user select one", async () => {
+    mockedApiListWordBanks.mockResolvedValue(WORD_BANKS);
+    const { store } = renderWithStore();
+    const user = userEvent.setup();
+    const search = screen.getByLabelText("Search word banks");
+
+    await user.click(search);
+
+    const option = await screen.findByRole("button", {
+      name: "English \u2014 200 Most Common",
+    });
+    await user.click(option);
+
+    expect(store.getState().typingConfig.wordBankSlug).toBe("english-top-200");
+    expect(mockedLoadWordBankWords).toHaveBeenCalledWith("english-top-200");
+    expect(search).toHaveValue("English \u2014 200 Most Common");
+  });
+
+  it("filters word banks by search text", async () => {
+    mockedApiListWordBanks.mockResolvedValue(WORD_BANKS);
+    renderWithStore();
+    const user = userEvent.setup();
+    const search = screen.getByLabelText("Search word banks");
+
+    await user.clear(search);
+    await user.type(search, "1000");
+
+    expect(
+      screen.queryByRole("option", {
+        name: "English \u2014 200 Most Common",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "English Top 1000" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows all word banks in the dropdown when opened without typing", async () => {
+    mockedApiListWordBanks.mockResolvedValue(WORD_BANKS);
+    renderWithStore();
+    const user = userEvent.setup();
+    const search = screen.getByLabelText("Search word banks");
+
+    await user.click(search);
+
+    expect(
+      screen.getByRole("option", { name: "English \u2014 200 Most Common" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "English Top 1000" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Default" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("highlights the currently selected word bank", async () => {
+    mockedApiListWordBanks.mockResolvedValue(WORD_BANKS);
+    const store = createTestStore();
+    store.dispatch({
+      type: "typingConfig/setWordBankSlug",
+      payload: "english-top-200",
+    });
+    renderWithStore(store);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByLabelText("Search word banks"));
+    const option = await screen.findByRole("option", {
+      name: "English \u2014 200 Most Common",
+    });
+    expect(option).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("preloads words for a word bank that is already selected", async () => {
+    mockedApiListWordBanks.mockResolvedValue(WORD_BANKS);
+    const store = createTestStore();
+    store.dispatch({
+      type: "typingConfig/setWordBankSlug",
+      payload: "english-top-200",
+    });
+    renderWithStore(store);
+
+    await waitFor(() =>
+      expect(mockedLoadWordBankWords).toHaveBeenCalledWith("english-top-200"),
+    );
+  });
+
+  it("shows the default bank label instead of the placeholder before the list loads", () => {
+    renderWithStore();
+    const search = screen.getByLabelText("Search word banks");
+
+    expect(search).toHaveValue("English Top 200");
+  });
+
+  it("swaps in the selected bank's real name once the list loads", async () => {
+    mockedApiListWordBanks.mockResolvedValue(WORD_BANKS);
+    renderWithStore();
+    const search = screen.getByLabelText("Search word banks");
+
+    await waitFor(() =>
+      expect(search).toHaveValue("English \u2014 200 Most Common"),
+    );
+  });
+
+  it("shows a previously selected word bank's name once the list loads", async () => {
+    mockedApiListWordBanks.mockResolvedValue(WORD_BANKS);
+    const store = createTestStore();
+    store.dispatch({
+      type: "typingConfig/setWordBankSlug",
+      payload: "english-top-1000",
+    });
+    renderWithStore(store);
+    const search = screen.getByLabelText("Search word banks");
+
+    await waitFor(() => expect(search).toHaveValue("English Top 1000"));
+  });
 });
+

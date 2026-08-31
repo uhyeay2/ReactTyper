@@ -43,6 +43,7 @@ export function describeSessionContext(
         result.durationLimitSeconds,
         result.maxWords,
         result.maxErrors,
+        result.wordBankSlug,
       ),
     };
   }

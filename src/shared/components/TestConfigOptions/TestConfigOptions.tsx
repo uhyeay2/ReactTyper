@@ -1,16 +1,33 @@
-import { useState, useCallback } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import {
   setDuration,
   setWordCount,
   setMaxErrors,
   setZenMode,
+  setWordBankSlug,
   selectDuration,
   selectWordCount,
   selectMaxErrors,
   selectIsZenMode,
+  selectWordBankSlug,
 } from "@/features/typingConfig/state/typingConfigSlice";
+import {
+  apiListWordBanks,
+  type WordBankSummary,
+} from "@/features/typingConfig/services/wordBanksApi";
+import { formatWordBankLabel } from "@/features/typingConfig/utils/formatWordBankLabel";
+import { loadWordBankWords } from "@/features/typing/utils/wordBankLoader";
+import { resetActiveWordPool } from "@/features/typing/utils/wordList";
 import styles from "./TestConfigOptions.module.css";
+
+const DEFAULT_BANK_LABEL = "Default";
 
 function formatTimeInput(value: number): string {
   const minutes = Math.floor(value / 60);
@@ -67,10 +84,104 @@ export function TestConfigOptions() {
   const configWordCount = useAppSelector(selectWordCount);
   const configMaxErrors = useAppSelector(selectMaxErrors);
   const isZenMode = useAppSelector(selectIsZenMode);
+  const configWordBankSlug = useAppSelector(selectWordBankSlug);
+
+  const [wordBanks, setWordBanks] = useState<WordBankSummary[]>([]);
+  const [bankListError, setBankListError] = useState<string | null>(null);
+  const [bankSearch, setBankSearch] = useState(() =>
+    configWordBankSlug === null
+      ? DEFAULT_BANK_LABEL
+      : formatWordBankLabel(configWordBankSlug),
+  );
+  const [bankListOpen, setBankListOpen] = useState(false);
+  const [searchEdited, setSearchEdited] = useState(false);
+  const searchEditedRef = useRef(false);
+  const configWordBankSlugRef = useRef(configWordBankSlug);
+
+  useEffect(() => {
+    configWordBankSlugRef.current = configWordBankSlug;
+  }, [configWordBankSlug]);
 
   const [customTimeInput, setCustomTimeInput] = useState("");
   const [customWordsInput, setCustomWordsInput] = useState("");
   const [customErrorsInput, setCustomErrorsInput] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    apiListWordBanks()
+      .then((banks) => {
+        if (cancelled) return;
+        setWordBanks(banks);
+        if (searchEditedRef.current) return;
+        const slug = configWordBankSlugRef.current;
+        const bank = banks.find((b) => b.slug === slug);
+        const label =
+          slug === null
+            ? DEFAULT_BANK_LABEL
+            : bank?.name ?? formatWordBankLabel(slug);
+        setBankSearch(label);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setBankListError("Unable to load word banks.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedBank = useMemo(
+    () => wordBanks.find((bank) => bank.slug === configWordBankSlug) ?? null,
+    [wordBanks, configWordBankSlug],
+  );
+
+  useEffect(() => {
+    if (configWordBankSlug === null) return;
+    void loadWordBankWords(configWordBankSlug);
+  }, [configWordBankSlug]);
+
+  const filteredBanks = useMemo(() => {
+    if (!searchEdited) return wordBanks;
+    const query = bankSearch.trim().toLowerCase();
+    if (query === "") return wordBanks;
+    return wordBanks.filter(
+      (bank) =>
+        bank.name.toLowerCase().includes(query) ||
+        bank.slug.toLowerCase().includes(query),
+    );
+  }, [wordBanks, bankSearch, searchEdited]);
+
+  const handleSelectBank = useCallback(
+    (slug: string | null, label: string) => {
+      dispatch(setWordBankSlug(slug));
+      setBankSearch(label);
+      setBankListOpen(false);
+      setSearchEdited(false);
+      searchEditedRef.current = false;
+      if (slug === null) {
+        resetActiveWordPool();
+        return;
+      }
+      void loadWordBankWords(slug);
+    },
+    [dispatch],
+  );
+
+  const handleBankSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        setBankListOpen(false);
+        setSearchEdited(false);
+        searchEditedRef.current = false;
+        setBankSearch(
+          configWordBankSlug === null
+            ? DEFAULT_BANK_LABEL
+            : selectedBank?.name ?? formatWordBankLabel(configWordBankSlug),
+        );
+      }
+    },
+    [selectedBank, configWordBankSlug],
+  );
 
   const handleTimePreset = useCallback(
     (seconds: number) => {
@@ -307,6 +418,54 @@ export function TestConfigOptions() {
           >
             None
           </button>
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <span className={styles.label}>Word Bank</span>
+        <div className={styles.bankGroup}>
+          <input
+            type="text"
+            className={styles.bankInput}
+            placeholder="Search word banks..."
+            aria-label="Search word banks"
+            value={bankSearch}
+            onChange={(e) => {
+              setSearchEdited(true);
+              searchEditedRef.current = true;
+              setBankSearch(e.target.value);
+              setBankListOpen(true);
+            }}
+            onFocus={(e) => {
+              e.target.select();
+              setBankListOpen(true);
+            }}
+            onBlur={() => setBankListOpen(false)}
+            onKeyDown={handleBankSearchKeyDown}
+          />
+          {bankListOpen && !bankListError && (
+            <ul className={styles.bankList} role="listbox">
+              {filteredBanks.map((bank) => (
+                <li
+                  key={bank.slug}
+                  role="option"
+                  aria-selected={configWordBankSlug === bank.slug}
+                >
+                  <button
+                    type="button"
+                    className={`${styles.presetBtn} ${configWordBankSlug === bank.slug ? styles.active : ""}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelectBank(bank.slug, bank.name)}
+                  >
+                    {bank.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {bankListError !== null && (
+            <span className={styles.errorHint}>{bankListError}</span>
+          )}
         </div>
       </div>
 

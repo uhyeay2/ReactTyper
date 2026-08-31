@@ -1,7 +1,10 @@
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { startFromHome } from "@/features/typing/state/typingSlice";
-import { selectWordCount } from "@/features/typingConfig/state/typingConfigSlice";
+import {
+  selectWordCount,
+  selectWordBankSlug,
+} from "@/features/typingConfig/state/typingConfigSlice";
 import { TestConfigOptions } from "@/shared/components/TestConfigOptions/TestConfigOptions";
 import styles from "./HomeScreen.module.css";
 
@@ -10,12 +13,16 @@ const DEFAULT_WORD_COUNT = 50;
 export function HomeScreen() {
   const dispatch = useAppDispatch();
   const configWordCount = useAppSelector(selectWordCount);
+  const configWordBankSlug = useAppSelector(selectWordBankSlug);
 
   const handleStart = useCallback(() => {
     dispatch(
-      startFromHome({ wordCount: configWordCount ?? DEFAULT_WORD_COUNT }),
+      startFromHome({
+        wordCount: configWordCount ?? DEFAULT_WORD_COUNT,
+        wordBankSlug: configWordBankSlug,
+      }),
     );
-  }, [dispatch, configWordCount]);
+  }, [dispatch, configWordCount, configWordBankSlug]);
 
   return (
     <div className={styles.container}>

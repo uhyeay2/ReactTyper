@@ -38,6 +38,7 @@ import {
   selectDuration,
   selectWordCount,
   selectMaxErrors,
+  selectWordBankSlug,
 } from "@/features/typingConfig/state/typingConfigSlice";
 import { buildResults } from "../utils/buildResults";
 import { countWordsWithErrors } from "../utils/calculateWordStats";
@@ -82,6 +83,7 @@ export function useTypingTest() {
   const configDuration = useAppSelector(selectDuration);
   const configMaxWords = useAppSelector(selectWordCount);
   const configMaxErrors = useAppSelector(selectMaxErrors);
+  const configWordBankSlug = useAppSelector(selectWordBankSlug);
   const isLessonSession = useAppSelector(selectIsLessonSession);
 
   const fixedCharsRef = useRef("");
@@ -430,9 +432,12 @@ export function useTypingTest() {
     fixedCharsRef.current = "";
     backspaceBoundaryRef.current = 0;
     dispatch(
-      startFromHome({ wordCount: configMaxWords ?? DEFAULT_WORD_COUNT }),
+      startFromHome({
+        wordCount: configMaxWords ?? DEFAULT_WORD_COUNT,
+        wordBankSlug: configWordBankSlug,
+      }),
     );
-  }, [dispatch, configMaxWords]);
+  }, [dispatch, configMaxWords, configWordBankSlug]);
 
   return useMemo(
     () => ({

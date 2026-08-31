@@ -60,16 +60,24 @@ const initialState: TypingState = {
 describe("typingSlice", () => {
   describe("startTest", () => {
     it("sets status to active and generates target text", () => {
-      const state = typingReducer(initialState, startTest());
+      const state = typingReducer(initialState, startTest({}));
       expect(state.status).toBe("active");
       expect(state.targetText.length).toBeGreaterThan(0);
       expect(state.startTime).toBeTypeOf("number");
     });
 
     it("respects custom word count", () => {
-      const state = typingReducer(initialState, startTest(10));
+      const state = typingReducer(initialState, startTest({ wordCount: 10 }));
       const words = state.targetText.split(" ");
       expect(words.length).toBe(10);
+    });
+
+    it("records the selected word bank slug", () => {
+      const state = typingReducer(
+        initialState,
+        startTest({ wordCount: 10, wordBankSlug: "english-top-200" }),
+      );
+      expect(state.sessionContext.wordBankSlug).toBe("english-top-200");
     });
   });
 
@@ -211,7 +219,7 @@ describe("typingSlice", () => {
           typedText: "the ca",
           currentIndex: 6,
         },
-        refreshTest(),
+        refreshTest({ wordCount: 50, wordBankSlug: null }),
       );
       expect(state.status).toBe("ready");
       expect(state.typedText).toBe("");
@@ -612,7 +620,7 @@ describe("typingSlice", () => {
           ...initialState,
           wpmHistory: [{ second: 1, totalTyped: 5, errors: 0 }],
         },
-        refreshTest(),
+        refreshTest({ wordCount: 50, wordBankSlug: null }),
       );
       expect(state.wpmHistory).toEqual([]);
     });
@@ -719,7 +727,7 @@ describe("typingSlice", () => {
     it("uses existing word count when no payload is provided", () => {
       const state = typingReducer(
         { ...initialState, wordCount: 10 },
-        startTest(),
+        startTest({}),
       );
       expect(state.wordCount).toBe(10);
       const words = state.targetText.split(" ");
