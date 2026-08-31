@@ -560,7 +560,9 @@ describe("TypingTest", () => {
     });
 
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();
-    expect(store.getState().typing.targetText).toBe("first unit words here");
+    expect(
+      store.getState().typing.targetText.split(" ").sort(),
+    ).toEqual("first unit words here".split(" ").sort());
     expect(store.getState().typing.sessionContext.sessionType).toBe(
       SessionTypeValue.LessonUnit,
     );
@@ -580,7 +582,9 @@ describe("TypingTest", () => {
       screen.getByText("Next Lesson").click();
     });
 
-    expect(store.getState().typing.targetText).toBe("second unit words here");
+    expect(
+      store.getState().typing.targetText.split(" ").sort(),
+    ).toEqual("second unit words here".split(" ").sort());
     expect(store.getState().typing.sessionContext.lessonUnitOrder).toBe(1);
     expect(store.getState().typing.status).toBe("ready");
     expect(screen.getByText("Press any key to start")).toBeInTheDocument();

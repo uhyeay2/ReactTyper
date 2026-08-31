@@ -78,6 +78,17 @@ export function getTargetText(wordCount: number): string {
   return getRandomWords(wordCount).join(" ");
 }
 
+/**
+ * Randomizes the word order of a lesson unit's content so the same lesson is
+ * not presented in the same sequence every time it is started.
+ * The whitespace between words is normalized to single spaces.
+ */
+export function getRandomizedLessonText(content: string): string {
+  const words = content.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return words.join(" ");
+  return shuffleArray(words).join(" ");
+}
+
 let extraWordsPool: string[] = [];
 
 export function getExtraWords(count: number): string {

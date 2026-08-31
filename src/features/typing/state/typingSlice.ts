@@ -7,7 +7,7 @@ import type {
 } from "./typingTypes";
 import type { Keystroke, WpmTimelinePoint } from "../metrics/wpm";
 import { computeLiveWpm, isLiveWpmReady } from "../metrics/wpm";
-import { getTargetText } from "../utils/wordList";
+import { getRandomizedLessonText, getTargetText } from "../utils/wordList";
 import { SessionTypeValue } from "@/features/history/state/historyTypes";
 import { isLessonSessionType } from "@/features/history/utils/sessionType";
 
@@ -86,7 +86,7 @@ const typingSlice = createSlice({
         lessonUnitOrder: number | null;
       }>,
     ) {
-      const target = action.payload.targetText.trim();
+      const target = getRandomizedLessonText(action.payload.targetText);
       state.view = "test";
       state.status = "ready";
       state.targetText = target;

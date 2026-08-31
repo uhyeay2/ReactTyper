@@ -3,6 +3,7 @@ import {
   getRandomWords,
   getTargetText,
   getExtraWords,
+  getRandomizedLessonText,
 } from "../utils/wordList";
 
 describe("wordList", () => {
@@ -40,5 +41,30 @@ describe("wordList", () => {
     const second = getExtraWords(300);
     expect(first.split(" ").length).toBe(300);
     expect(second.split(" ").length).toBe(300);
+  });
+
+  describe("getRandomizedLessonText", () => {
+    it("normalizes whitespace and preserves all words", () => {
+      const result = getRandomizedLessonText("the   quick\nbrown\tfox");
+      expect(result.split(" ").sort()).toEqual(
+        ["the", "quick", "brown", "fox"].sort(),
+      );
+    });
+
+    it("returns the single word unchanged when there is only one", () => {
+      expect(getRandomizedLessonText("soliloquy")).toBe("soliloquy");
+    });
+
+    it("returns empty string for blank content", () => {
+      expect(getRandomizedLessonText("   ")).toBe("");
+      expect(getRandomizedLessonText("")).toBe("");
+    });
+
+    it("produces a reordered sequence for multi-word content", () => {
+      const content = "one two three four five six seven eight nine ten";
+      const result = getRandomizedLessonText(content);
+      expect(result).not.toBe(content);
+      expect(result.split(" ").sort()).toEqual(content.split(" ").sort());
+    });
   });
 });

@@ -10,6 +10,7 @@ import typingReducer, {
   startReadyTest,
   navigateHome,
   startFromHome,
+  startLessonSession,
   recordWpmSnapshot,
   recordLiveWpm,
   selectTypingStatus,
@@ -29,7 +30,6 @@ import typingReducer, {
 } from "../state/typingSlice";
 import type { TypingState } from "../state/typingTypes";
 import { SessionTypeValue } from "@/features/history/state/historyTypes";
-
 const initialState: TypingState = {
   view: "home",
   status: "idle",
@@ -78,6 +78,31 @@ describe("typingSlice", () => {
         startTest({ wordCount: 10, wordBankSlug: "english-top-200" }),
       );
       expect(state.sessionContext.wordBankSlug).toBe("english-top-200");
+    });
+  });
+
+  describe("startLessonSession", () => {
+    it("randomizes the order of the lesson unit content", () => {
+      const content = "the quick brown fox jumps over the lazy dog";
+      const state = typingReducer(
+        initialState,
+        startLessonSession({
+          targetText: content,
+          sessionType: SessionTypeValue.LessonUnit,
+          lessonSlug: "lesson-a",
+          lessonUnitOrder: 0,
+        }),
+      );
+      expect(state.targetText.split(" ").sort()).toEqual(
+        content.split(" ").sort(),
+      );
+      expect(state.wordCount).toBe(9);
+      expect(state.sessionContext).toEqual({
+        sessionType: SessionTypeValue.LessonUnit,
+        lessonSlug: "lesson-a",
+        lessonUnitOrder: 0,
+        wordBankSlug: null,
+      });
     });
   });
 

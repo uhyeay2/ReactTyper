@@ -120,7 +120,9 @@ describe("LessonsScreen", () => {
     expect(state.typing.status).toBe("ready");
     expect(state.typing.sessionContext.lessonSlug).toBe("home-row");
     expect(state.typing.sessionContext.lessonUnitOrder).toBe(0);
-    expect(state.typing.targetText).toBe("asdf jkl;");
+    expect(state.typing.targetText.split(" ").sort()).toEqual(
+      "asdf jkl;".split(" ").sort(),
+    );
   });
 
   it("shows an error when a lesson fails to load", async () => {
