@@ -44,7 +44,9 @@ export interface TypingTestResult {
   isZenMode: boolean;
   wordBankSlug: string | null;
   lessonSlug: string | null;
+  lessonTitle: string | null;
   lessonUnitOrder: number | null;
+  lessonUnitTitle: string | null;
   completedAtUtc: string;
   typedWords: TypedWord[];
   wpmTimeline: WpmPoint[];

@@ -64,6 +64,11 @@
   color: var(--text-muted);
 }
 
+.context {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
 .detailButton {
   align-self: flex-start;
   background: none;

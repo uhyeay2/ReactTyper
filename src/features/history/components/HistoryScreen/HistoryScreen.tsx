@@ -7,6 +7,7 @@ import {
   selectHistoryResults,
 } from "../../state/historySlice";
 import { sessionTypeLabel } from "../../utils/sessionType";
+import { describeSessionContext } from "../../utils/describeSessionContext";
 import { HistoryDetail } from "../HistoryDetail/HistoryDetail";
 import type { TypingTestResult } from "../../state/historyTypes";
 import styles from "./HistoryScreen.module.css";
@@ -61,6 +62,9 @@ export function HistoryScreen() {
               <span className={styles.badge}>{sessionTypeLabel(result.sessionType)}</span>
               <span className={styles.meta}>{formatDate(result.completedAtUtc)}</span>
             </div>
+            <span className={styles.context}>
+              {describeSessionContext(result).summary}
+            </span>
             <button
               type="button"
               className={styles.detailButton}

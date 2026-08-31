@@ -1,5 +1,6 @@
 import type { TypingTestResult } from "../../state/historyTypes";
 import { sessionTypeLabel } from "../../utils/sessionType";
+import { describeSessionContext } from "../../utils/describeSessionContext";
 import { buildGraphTimeline } from "../../utils/buildGraphTimeline";
 import { ResultsMetrics, type ResultStats } from "@/shared/components/ResultsMetrics/ResultsMetrics";
 import { WpmGraph } from "@/shared/components/WpmGraph/WpmGraph";
@@ -40,6 +41,7 @@ function toResultStats(result: TypingTestResult): ResultStats {
  */
 export function HistoryDetail({ result, onBack }: HistoryDetailProps) {
   const timeline = buildGraphTimeline(result);
+  const context = describeSessionContext(result);
 
   return (
     <div className={styles.container}>
@@ -54,6 +56,8 @@ export function HistoryDetail({ result, onBack }: HistoryDetailProps) {
             {new Date(result.completedAtUtc).toLocaleString()}
           </span>
         </header>
+
+        <p className={styles.context}>{context.summary}</p>
 
         <ResultsMetrics stats={toResultStats(result)} />
 

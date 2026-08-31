@@ -29,7 +29,9 @@ function makeResult(
     isZenMode: false,
     wordBankSlug: null,
     lessonSlug: null,
+    lessonTitle: null,
     lessonUnitOrder: null,
+    lessonUnitTitle: null,
     completedAtUtc: "2026-01-15T10:30:00.000Z",
     typedWords: [
       {
@@ -77,6 +79,35 @@ describe("HistoryDetail", () => {
     expect(
       screen.getByText(new Date("2026-01-15T10:30:00.000Z").toLocaleString()),
     ).toBeInTheDocument();
+  });
+
+  it("shows the settings used for a typing test", () => {
+    const result = makeResult({
+      durationLimitSeconds: 60,
+      maxWords: 50,
+      maxErrors: 3,
+    });
+
+    render(<HistoryDetail result={result} onBack={vi.fn()} />);
+
+    expect(screen.getByText(/1m Time Limit/)).toBeInTheDocument();
+    expect(screen.getByText(/50 Word Limit/)).toBeInTheDocument();
+    expect(screen.getByText(/3 Max Errors/)).toBeInTheDocument();
+  });
+
+  it("shows the lesson and unit completed for a lesson unit", () => {
+    const result = makeResult({
+      sessionType: 2,
+      lessonSlug: "lesson-1",
+      lessonTitle: "Home Row",
+      lessonUnitOrder: 2,
+      lessonUnitTitle: "Sequence Practice",
+    });
+
+    render(<HistoryDetail result={result} onBack={vi.fn()} />);
+
+    expect(screen.getByText(/Lesson Home Row/)).toBeInTheDocument();
+    expect(screen.getByText(/Unit 3: Sequence Practice/)).toBeInTheDocument();
   });
 
   it("renders the headline metrics like the post-test review", () => {
