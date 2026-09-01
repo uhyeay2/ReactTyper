@@ -2,6 +2,7 @@ export const SessionTypeValue = {
   TypingTest: 0,
   Lesson: 1,
   LessonUnit: 2,
+  WordDrop: 3,
 } as const;
 
 export type SessionType = (typeof SessionTypeValue)[keyof typeof SessionTypeValue];
@@ -50,6 +51,7 @@ export interface TypingTestResult {
   completedAtUtc: string;
   typedWords: TypedWord[];
   wpmTimeline: WpmPoint[];
+  score?: number | null;
 }
 
 export interface RecordTypingResultPayload {
@@ -77,4 +79,5 @@ export interface RecordTypingResultPayload {
   lessonUnitOrder: number | null;
   typedWords: TypedWord[];
   wpmTimeline: WpmPoint[];
+  score?: number | null;
 }

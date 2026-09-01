@@ -1,5 +1,6 @@
 import type { TypingTestResult } from "../../state/historyTypes";
 import { sessionTypeLabel } from "../../utils/sessionType";
+import { SessionTypeValue } from "../../state/historyTypes";
 import { describeSessionContext } from "../../utils/describeSessionContext";
 import { buildGraphTimeline } from "../../utils/buildGraphTimeline";
 import { ResultsMetrics, type ResultStats } from "@/shared/components/ResultsMetrics/ResultsMetrics";
@@ -58,6 +59,13 @@ export function HistoryDetail({ result, onBack }: HistoryDetailProps) {
         </header>
 
         <p className={styles.context}>{context.summary}</p>
+
+        {result.sessionType === SessionTypeValue.WordDrop ? (
+          <div className={styles.score}>
+            <span className={styles.scoreValue}>{result.score ?? 0}</span>
+            <span className={styles.scoreLabel}>SCORE</span>
+          </div>
+        ) : null}
 
         <ResultsMetrics stats={toResultStats(result)} />
 

@@ -4,6 +4,7 @@ import themeReducer from "@/features/theme/state/themeSlice";
 import typingConfigReducer from "@/features/typingConfig/state/typingConfigSlice";
 import authReducer from "@/features/auth/state/authSlice";
 import historyReducer from "@/features/history/state/historySlice";
+import wordDropReducer from "@/features/games/state/gamesSlice";
 
 const rootReducer = combineReducers({
   typing: typingReducer,
@@ -11,6 +12,7 @@ const rootReducer = combineReducers({
   typingConfig: typingConfigReducer,
   auth: authReducer,
   history: historyReducer,
+  wordDrop: wordDropReducer,
 });
 
 export default rootReducer;

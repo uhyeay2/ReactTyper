@@ -36,6 +36,20 @@ function describeLessonContext(result: TypingTestResult): SessionContextDescript
 export function describeSessionContext(
   result: TypingTestResult,
 ): SessionContextDescription {
+  if (result.sessionType === SessionTypeValue.WordDrop) {
+    const settings = formatConfigSummary(
+      result.isZenMode,
+      result.durationLimitSeconds,
+      result.maxWords,
+      result.maxErrors,
+      result.wordBankSlug,
+    );
+    return {
+      summary: `Word Drop \u00b7 Score ${result.score ?? 0}`,
+      detail: settings,
+    };
+  }
+
   if (result.sessionType === SessionTypeValue.TypingTest) {
     return {
       summary: formatConfigSummary(

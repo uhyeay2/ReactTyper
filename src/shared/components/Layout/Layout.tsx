@@ -54,6 +54,9 @@ export function Layout({ children }: LayoutProps) {
           <Link className={styles.navLink} to="/lessons">
             Lessons
           </Link>
+          <Link className={styles.navLink} to="/games">
+            Games
+          </Link>
           {authStatus === "authenticated" ? (
             <Link className={styles.navLink} to="/history">
               History

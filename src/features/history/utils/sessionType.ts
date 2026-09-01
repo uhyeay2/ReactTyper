@@ -4,6 +4,7 @@ const LABELS: Record<SessionType, string> = {
   [SessionTypeValue.TypingTest]: "Typing Test",
   [SessionTypeValue.Lesson]: "Lesson",
   [SessionTypeValue.LessonUnit]: "Lesson Unit",
+  [SessionTypeValue.WordDrop]: "Word Drop",
 };
 
 export function sessionTypeLabel(sessionType: SessionType): string {

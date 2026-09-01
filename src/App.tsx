@@ -13,6 +13,8 @@ import { LessonDetailScreen } from "@/features/lessons/components/LessonDetailSc
 import { HistoryScreen } from "@/features/history/components/HistoryScreen/HistoryScreen";
 import { AdminLessonsScreen } from "@/features/admin/components/AdminLessonsScreen/AdminLessonsScreen";
 import { LessonFormScreen } from "@/features/admin/components/LessonFormScreen/LessonFormScreen";
+import { GamesScreen } from "@/features/games/components/GamesScreen/GamesScreen";
+import { WordDrop } from "@/features/games/components/WordDrop/WordDrop";
 import {
   selectAuthStatus,
   selectIsAdmin,
@@ -57,6 +59,8 @@ export function App() {
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/lessons" element={<LessonsScreen />} />
         <Route path="/lessons/:slug" element={<LessonDetailScreen />} />
+        <Route path="/games" element={<GamesScreen />} />
+        <Route path="/games/word-drop" element={<WordDrop />} />
         <Route
           path="/history"
           element={
