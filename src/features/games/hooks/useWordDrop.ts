@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useEffect, useMemo, useRef } from "react";
 import { useStore } from "react-redux";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import type { RootState } from "@/app/store";
@@ -352,6 +352,14 @@ export function useWordDrop() {
     dispatch(setGameStatus("active"));
     dispatchMetrics();
   }, [dispatch, timeLimit, configWordCount, configMaxErrors, configZenMode, configWordBankSlug, resetActiveAccumulator, dispatchMetrics]);
+
+  useLayoutEffect(() => {
+    // The redux state persists across route navigation, so a previous game's
+    // results could otherwise resurface when the screen is revisited. Reset
+    // synchronously before paint so arriving at Word Drop always shows the
+    // settings/start screen without a flash of the old results.
+    dispatch(resetGame());
+  }, [dispatch]);
 
   useEffect(() => {
     if (status !== "active") return;

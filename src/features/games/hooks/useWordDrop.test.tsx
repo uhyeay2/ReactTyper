@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
 import { setWordCount, setMaxErrors } from "@/features/typingConfig/state/typingConfigSlice";
+import { completeGame } from "../state/gamesSlice";
 import { useWordDrop } from "./useWordDrop";
 
 const wordQueue: string[] = [];
@@ -78,6 +79,40 @@ describe("useWordDrop", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+  });
+
+  it("resets a previously completed game to the settings/start state on mount", () => {
+    const store = createStore();
+    store.dispatch(
+      completeGame({
+        accuracy: 90,
+        correctCharacters: 9,
+        incorrectCharacters: 1,
+        totalCharactersTyped: 10,
+        wordsCompleted: 2,
+        wordsPerfect: 2,
+        wordsCorrected: 0,
+        wordsErrored: 0,
+        score: 100,
+        elapsedTime: 30,
+        maxWordsReached: false,
+        averageWpm: 50,
+        highestWpm: 60,
+        lowestWpm: 40,
+        timeLimit: 60,
+        wordLimit: null,
+        maxErrors: null,
+        isZenMode: false,
+        wordBankSlug: null,
+        stacked: [],
+      }),
+    );
+    expect(store.getState().wordDrop.status).toBe("completed");
+
+    // mounting the screen must wipe the stale result so Settings show again
+    renderGame(store);
+    expect(screen.getByTestId("status").textContent).toBe("idle");
+    expect(screen.getByTestId("result").textContent).toBe("none");
   });
 
   it("completes a typed word perfectly, scoring it and immediately spawning the next", () => {

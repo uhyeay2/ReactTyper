@@ -6,6 +6,7 @@ export interface WordDropResultsProps {
   results: WordDropResults;
   onPlayAgain: () => void;
   onNewWords: () => void;
+  onEditSettings: () => void;
   onBackToGames: () => void;
 }
 
@@ -13,6 +14,7 @@ export function WordDropResults({
   results,
   onPlayAgain,
   onNewWords,
+  onEditSettings,
   onBackToGames,
 }: WordDropResultsProps) {
   const summary = formatConfigSummary(
@@ -71,6 +73,9 @@ export function WordDropResults({
           </button>
           <button type="button" className={styles.controlBtn} onClick={onNewWords}>
             New Words
+          </button>
+          <button type="button" className={styles.controlBtn} onClick={onEditSettings}>
+            Edit Settings
           </button>
           <button type="button" className={styles.controlBtn} onClick={onBackToGames}>
             Back to Games

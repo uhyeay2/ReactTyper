@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
@@ -84,10 +84,21 @@ describe("WordDrop screen", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/games");
   });
 
-  it("shows results when the game is completed", () => {
+  it("resets any prior completed game to the settings screen on mount", () => {
     const store = createStore();
     store.dispatch(completeGame(fullResults));
     renderScreen(store);
+    // arriving at the screen must not resurface the previous result
+    expect(screen.getByRole("button", { name: "Start Game" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Play Again" })).toBeNull();
+  });
+
+  it("shows results when a game completes during the session", () => {
+    const store = createStore();
+    renderScreen(store);
+    act(() => {
+      store.dispatch(completeGame(fullResults));
+    });
     expect(screen.getByText("700")).toBeInTheDocument();
     expect(screen.getByText("SCORE")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play Again" })).toBeInTheDocument();

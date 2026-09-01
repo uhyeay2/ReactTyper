@@ -38,6 +38,7 @@ export function WordDrop() {
     handleStart,
     handleKeyDown,
     handleQuit,
+    handleReset,
     handleStackOverflow,
   } = useWordDrop();
 
@@ -66,6 +67,7 @@ export function WordDrop() {
           results={results}
           onPlayAgain={handleStart}
           onNewWords={handleStart}
+          onEditSettings={handleReset}
           onBackToGames={handleBackToGames}
         />
       </div>
