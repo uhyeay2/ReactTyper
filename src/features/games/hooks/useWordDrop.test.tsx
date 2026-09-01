@@ -94,7 +94,7 @@ describe("useWordDrop", () => {
     expect(screen.getByTestId("queue").textContent).toBe("1");
     expect(screen.getByTestId("words").textContent).toBe("1");
     expect(screen.getByTestId("perfect").textContent).toBe("1");
-    expect(screen.getByTestId("score").textContent).toBe("100");
+    expect(screen.getByTestId("score").textContent).toBe("50");
   });
 
   it("only advances the typed buffer on correct keys", () => {
@@ -126,7 +126,7 @@ describe("useWordDrop", () => {
     typeWord("hello");
 
     expect(screen.getByTestId("corrected").textContent).toBe("1");
-    expect(screen.getByTestId("score").textContent).toBe("50");
+    expect(screen.getByTestId("score").textContent).toBe("25");
   });
 
   it("ends the game successfully when the word limit is reached", () => {

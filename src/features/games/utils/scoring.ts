@@ -1,11 +1,11 @@
 import type { WordDropWordQuality } from "../state/gamesTypes";
 
 /** Base score awarded for completing a word without any correction. */
-export const SCORE_PERFECT_WORD = 100;
+export const SCORE_PERFECT_WORD = 50;
 /** Score awarded for completing a word after correcting a typo. */
-export const SCORE_CORRECTED_WORD = 50;
+export const SCORE_CORRECTED_WORD = 25;
 /** Score awarded for completing a word that still contains an error. */
-export const SCORE_ERRORED_WORD = 10;
+export const SCORE_ERRORED_WORD = 5;
 /** Bonus multiplier weight applied per WPM when scoring a word. */
 export const SPEED_BONUS_SCALE = 0.5;
 /** Maximum speed bonus that can be earned for a single word. */
