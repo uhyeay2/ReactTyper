@@ -32,7 +32,6 @@ describe("WordDropResults", () => {
       <WordDropResultsView
         results={baseResults}
         onPlayAgain={vi.fn()}
-        onNewWords={vi.fn()}
         onEditSettings={vi.fn()}
         onBackToGames={vi.fn()}
       />,
@@ -52,7 +51,6 @@ describe("WordDropResults", () => {
       <WordDropResultsView
         results={{ ...baseResults, maxWordsReached: true }}
         onPlayAgain={vi.fn()}
-        onNewWords={vi.fn()}
         onEditSettings={vi.fn()}
         onBackToGames={vi.fn()}
       />,
@@ -62,24 +60,20 @@ describe("WordDropResults", () => {
 
   it("invokes the action handlers", () => {
     const onPlayAgain = vi.fn();
-    const onNewWords = vi.fn();
     const onEditSettings = vi.fn();
     const onBackToGames = vi.fn();
     render(
       <WordDropResultsView
         results={baseResults}
         onPlayAgain={onPlayAgain}
-        onNewWords={onNewWords}
         onEditSettings={onEditSettings}
         onBackToGames={onBackToGames}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
-    fireEvent.click(screen.getByRole("button", { name: "New Words" }));
     fireEvent.click(screen.getByRole("button", { name: "Edit Settings" }));
     fireEvent.click(screen.getByRole("button", { name: "Back to Games" }));
     expect(onPlayAgain).toHaveBeenCalledTimes(1);
-    expect(onNewWords).toHaveBeenCalledTimes(1);
     expect(onEditSettings).toHaveBeenCalledTimes(1);
     expect(onBackToGames).toHaveBeenCalledTimes(1);
   });

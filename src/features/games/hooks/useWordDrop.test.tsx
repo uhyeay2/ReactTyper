@@ -27,6 +27,7 @@ function TestComponent() {
     status,
     typed,
     words,
+    nextWord,
     metrics,
     results,
     handleStart,
@@ -38,6 +39,7 @@ function TestComponent() {
       <span data-testid="status">{status}</span>
       <span data-testid="typed">{typed}</span>
       <span data-testid="queue">{words.length}</span>
+      <span data-testid="next-word">{nextWord || "(none)"}</span>
       <span data-testid="score">{metrics.score}</span>
       <span data-testid="words">{metrics.wordsCompleted}</span>
       <span data-testid="perfect">{metrics.wordsPerfect}</span>
@@ -226,5 +228,54 @@ describe("useWordDrop", () => {
     // itself stays active here.
     expect(screen.getByTestId("queue").textContent).toBe("4");
     expect(screen.getByTestId("status").textContent).toBe("active");
+  });
+
+  it("previews the next queued word and consumes it when it spawns", () => {
+    wordQueue.push("hello", "world", "mouse");
+    const store = createStore();
+    renderGame(store);
+
+    fireEvent.click(screen.getByTestId("start"));
+
+    // the very next word is prefetched and shown before it drops
+    expect(screen.getByTestId("next-word").textContent).toBe("world");
+
+    typeWord("hello");
+
+    // completing the active word immediately spawns the previewed word and
+    // updates the preview to the word that follows it
+    expect(screen.getByTestId("queue").textContent).toBe("1");
+    expect(screen.getByTestId("next-word").textContent).toBe("mouse");
+  });
+
+  it("clears the preview once the word budget is exhausted", () => {
+    wordQueue.push("hello", "world", "mouse");
+    const store = createStore();
+    store.dispatch(setWordCount(2));
+    renderGame(store);
+
+    fireEvent.click(screen.getByTestId("start"));
+
+    // with a budget of two, the first spawn previews the second word
+    expect(screen.getByTestId("next-word").textContent).toBe("world");
+
+    typeWord("hello");
+
+    // after the second word spawns the budget is reached and no further word
+    // is advertised
+    expect(screen.getByTestId("queue").textContent).toBe("1");
+    expect(screen.getByTestId("next-word").textContent).toBe("(none)");
+  });
+
+  it("shows no preview at the start when the budget is a single word", () => {
+    wordQueue.push("hello", "world");
+    const store = createStore();
+    store.dispatch(setWordCount(1));
+    renderGame(store);
+
+    fireEvent.click(screen.getByTestId("start"));
+
+    expect(screen.getByTestId("queue").textContent).toBe("1");
+    expect(screen.getByTestId("next-word").textContent).toBe("(none)");
   });
 });

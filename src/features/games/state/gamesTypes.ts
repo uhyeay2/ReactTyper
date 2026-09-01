@@ -70,6 +70,11 @@ export interface WordDropState {
    * word, which is the active typing target.
    */
   words: WordDropQueuedWord[];
+  /**
+   * The word that will spawn next, shown as a preview above the field. Empty
+   * when no further word will spawn (e.g. the word budget is exhausted).
+   */
+  nextWord: string;
   /** Typed prefix for the active (bottom) word. */
   typed: string;
   /** Words already completed and recorded for scoring/history. */

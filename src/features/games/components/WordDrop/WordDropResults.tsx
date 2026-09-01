@@ -5,7 +5,6 @@ import styles from "./WordDropResults.module.css";
 export interface WordDropResultsProps {
   results: WordDropResults;
   onPlayAgain: () => void;
-  onNewWords: () => void;
   onEditSettings: () => void;
   onBackToGames: () => void;
 }
@@ -13,7 +12,6 @@ export interface WordDropResultsProps {
 export function WordDropResults({
   results,
   onPlayAgain,
-  onNewWords,
   onEditSettings,
   onBackToGames,
 }: WordDropResultsProps) {
@@ -70,9 +68,6 @@ export function WordDropResults({
         <div className={styles.controls}>
           <button type="button" className={styles.controlBtn} onClick={onPlayAgain}>
             Play Again
-          </button>
-          <button type="button" className={styles.controlBtn} onClick={onNewWords}>
-            New Words
           </button>
           <button type="button" className={styles.controlBtn} onClick={onEditSettings}>
             Edit Settings

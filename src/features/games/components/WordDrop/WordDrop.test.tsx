@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "@/app/rootReducer";
-import { completeGame } from "../../state/gamesSlice";
+import { completeGame, startGame } from "../../state/gamesSlice";
 import type { WordDropResults } from "../../state/gamesTypes";
 
 const mockNavigate = vi.fn();
@@ -102,5 +102,48 @@ describe("WordDrop screen", () => {
     expect(screen.getByText("700")).toBeInTheDocument();
     expect(screen.getByText("SCORE")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play Again" })).toBeInTheDocument();
+  });
+
+  it("previews the next word at the top of the screen during play", () => {
+    const store = createStore();
+    renderScreen(store);
+    act(() => {
+      store.dispatch(
+        startGame({
+          words: [{ id: 1, text: "hello" }],
+          nextWord: "world",
+          sessionContext: {
+            timeLimit: 60,
+            wordLimit: null,
+            maxErrors: null,
+            isZenMode: false,
+            wordBankSlug: null,
+          },
+        }),
+      );
+    });
+    expect(screen.getByText("Next")).toBeInTheDocument();
+    expect(screen.getByText("world")).toBeInTheDocument();
+  });
+
+  it("does not show the preview when there is no upcoming word", () => {
+    const store = createStore();
+    renderScreen(store);
+    act(() => {
+      store.dispatch(
+        startGame({
+          words: [{ id: 1, text: "hello" }],
+          nextWord: "",
+          sessionContext: {
+            timeLimit: 60,
+            wordLimit: 1,
+            maxErrors: null,
+            isZenMode: false,
+            wordBankSlug: null,
+          },
+        }),
+      );
+    });
+    expect(screen.queryByText("Next")).toBeNull();
   });
 });

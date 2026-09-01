@@ -12,6 +12,7 @@ import type {
 const initialState: WordDropState = {
   status: "idle",
   words: [],
+  nextWord: "",
   typed: "",
   completed: [],
   metrics: {
@@ -50,11 +51,13 @@ const wordDropSlice = createSlice({
       state,
       action: PayloadAction<{
         words: WordDropQueuedWord[];
+        nextWord: string;
         sessionContext: WordDropSessionContext;
       }>,
     ) {
       state.status = "ready";
       state.words = action.payload.words;
+      state.nextWord = action.payload.nextWord;
       state.typed = "";
       state.completed = [];
       state.metrics = initialState.metrics;
@@ -68,6 +71,9 @@ const wordDropSlice = createSlice({
     },
     addWord(state, action: PayloadAction<WordDropQueuedWord>) {
       state.words.push(action.payload);
+    },
+    setNextWord(state, action: PayloadAction<string>) {
+      state.nextWord = action.payload;
     },
     removeActiveWord(state) {
       if (state.words.length > 0) {
@@ -108,6 +114,7 @@ export const {
   startGame,
   setGameStatus,
   addWord,
+  setNextWord,
   removeActiveWord,
   setTyped,
   appendCompleted,
@@ -123,6 +130,8 @@ export const selectWordDropStatus = (state: {
 }) => state.wordDrop.status;
 export const selectWordDropWords = (state: { wordDrop: WordDropState }) =>
   state.wordDrop.words;
+export const selectWordDropNextWord = (state: { wordDrop: WordDropState }) =>
+  state.wordDrop.nextWord;
 export const selectWordDropTyped = (state: { wordDrop: WordDropState }) =>
   state.wordDrop.typed;
 export const selectWordDropCompleted = (state: {

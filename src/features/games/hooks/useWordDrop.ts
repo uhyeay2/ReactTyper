@@ -6,6 +6,7 @@ import {
   startGame,
   setGameStatus,
   addWord,
+  setNextWord,
   removeActiveWord,
   setTyped,
   appendCompleted,
@@ -16,6 +17,7 @@ import {
   resetGame,
   selectWordDropStatus,
   selectWordDropWords,
+  selectWordDropNextWord,
   selectWordDropTyped,
   selectWordDropCompleted,
   selectWordDropMetrics,
@@ -154,6 +156,7 @@ export function useWordDrop() {
 
   const status = useAppSelector(selectWordDropStatus);
   const words = useAppSelector(selectWordDropWords);
+  const nextWord = useAppSelector(selectWordDropNextWord);
   const typed = useAppSelector(selectWordDropTyped);
   const completed = useAppSelector(selectWordDropCompleted);
   const metrics = useAppSelector(selectWordDropMetrics);
@@ -264,6 +267,23 @@ export function useWordDrop() {
     [dispatch, store],
   );
 
+  /**
+   * Consumes the currently previewed next word (falling back to a fresh draw
+   * if none is present) and schedules the word that follows it as the new
+   * preview. The preview is cleared once the word budget is exhausted so the
+   * UI never advertises a word that will not spawn.
+   */
+  const spawnNextWord = useCallback((): string => {
+    const snap = store.getState().wordDrop;
+    const word = snap.nextWord || getNextGameWord();
+    simRef.current.spawnedCount += 1;
+    const budget = snap.sessionContext.wordLimit;
+    const budgetReached =
+      budget !== null && simRef.current.spawnedCount >= budget;
+    dispatch(setNextWord(budgetReached ? "" : getNextGameWord()));
+    return word;
+  }, [store, dispatch]);
+
   const completeActiveWord = useCallback(() => {
     const snap = store.getState().wordDrop;
     const active = snap.words[0];
@@ -319,11 +339,10 @@ export function useWordDrop() {
 
     if (remaining.length === 0 && simRef.current.spawnedCount < budget) {
       simRef.current.spawnAcc = 0;
-      dispatch(addWord({ id: nextWordId(), text: getNextGameWord() }));
-      simRef.current.spawnedCount += 1;
+      dispatch(addWord({ id: nextWordId(), text: spawnNextWord() }));
     }
     dispatchMetrics();
-  }, [store, dispatch, dispatchMetrics, resetActiveAccumulator, endGame]);
+  }, [store, dispatch, dispatchMetrics, resetActiveAccumulator, spawnNextWord, endGame]);
 
   const handleStart = useCallback(() => {
     const sim = simRef.current;
@@ -343,9 +362,14 @@ export function useWordDrop() {
     };
 
     const firstWord = { id: nextWordId(), text: getNextGameWord() };
+    const initialNextWord =
+      configWordCount !== null && sim.spawnedCount >= configWordCount
+        ? ""
+        : getNextGameWord();
     dispatch(
       startGame({
         words: [firstWord],
+        nextWord: initialNextWord,
         sessionContext: context,
       }),
     );
@@ -389,8 +413,7 @@ export function useWordDrop() {
             sim.spawnAcc = 0;
             break;
           }
-          dispatch(addWord({ id: nextWordId(), text: getNextGameWord() }));
-          sim.spawnedCount += 1;
+          dispatch(addWord({ id: nextWordId(), text: spawnNextWord() }));
           interval = spawnIntervalSeconds(sim.elapsed);
         }
       }
@@ -414,7 +437,7 @@ export function useWordDrop() {
       cancelAnimationFrame(frameId);
       activeRef.current = false;
     };
-  }, [status, dispatch, store, endGame]);
+  }, [status, dispatch, store, endGame, spawnNextWord]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -512,6 +535,7 @@ export function useWordDrop() {
   return {
     status,
     words,
+    nextWord,
     typed,
     completed,
     metrics,

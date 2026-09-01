@@ -28,6 +28,7 @@ export function WordDrop() {
   const {
     status,
     words,
+    nextWord,
     typed,
     metrics,
     elapsed,
@@ -66,7 +67,6 @@ export function WordDrop() {
         <WordDropResults
           results={results}
           onPlayAgain={handleStart}
-          onNewWords={handleStart}
           onEditSettings={handleReset}
           onBackToGames={handleBackToGames}
         />
@@ -128,6 +128,13 @@ export function WordDrop() {
           <span className={styles.statLabel}>Time</span>
         </div>
       </div>
+
+      {nextWord ? (
+        <div className={styles.nextWordPreview} aria-live="polite">
+          <span className={styles.nextWordLabel}>Next</span>
+          <span className={styles.nextWordText}>{nextWord}</span>
+        </div>
+      ) : null}
 
       <WordDropInput active={status === "active"} onKeyDown={handleKeyDown}>
         <WordDropField

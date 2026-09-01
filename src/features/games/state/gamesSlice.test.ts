@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import wordDropReducer, {
   startGame,
   addWord,
+  setNextWord,
   removeActiveWord,
   setTyped,
   appendCompleted,
@@ -12,6 +13,7 @@ import wordDropReducer, {
   resetGame,
   selectWordDropStatus,
   selectWordDropWords,
+  selectWordDropNextWord,
   selectWordDropTyped,
   selectWordDropCompleted,
   selectWordDropMetrics,
@@ -23,6 +25,7 @@ import type { WordDropState, WordDropMetrics } from "../state/gamesTypes";
 const initialState: WordDropState = {
   status: "idle",
   words: [],
+  nextWord: "",
   typed: "",
   completed: [],
   metrics: {
@@ -71,20 +74,30 @@ const sampleMetrics: WordDropMetrics = {
 };
 
 describe("wordDropSlice", () => {
-  it("starts a game with the provided initial words and context", () => {
+  it("starts a game with the provided initial words, next word, and context", () => {
     const state = wordDropReducer(
       initialState,
       startGame({
         words: [{ id: 1, text: "hello" }],
+        nextWord: "world",
         sessionContext: { ...initialState.sessionContext, timeLimit: 60 },
       }),
     );
     expect(state.status).toBe("ready");
     expect(state.words).toEqual([{ id: 1, text: "hello" }]);
+    expect(state.nextWord).toBe("world");
     expect(state.typed).toBe("");
     expect(state.sessionContext.timeLimit).toBe(60);
     expect(state.completed).toEqual([]);
     expect(state.metrics.score).toBe(0);
+  });
+
+  it("updates the previewed next word", () => {
+    const state = wordDropReducer(
+      { ...initialState, status: "active" },
+      setNextWord("fern"),
+    );
+    expect(state.nextWord).toBe("fern");
   });
 
   it("reflects typed characters", () => {
@@ -238,6 +251,7 @@ describe("wordDropSlice", () => {
     };
     expect(selectWordDropStatus(state)).toBe("active");
     expect(selectWordDropWords(state)).toEqual([{ id: 1, text: "abc" }]);
+    expect(selectWordDropNextWord(state)).toBe("");
     expect(selectWordDropTyped(state)).toBe("a");
     expect(selectWordDropCompleted(state)).toEqual([]);
     expect(selectWordDropMetrics(state)).toEqual(initialState.metrics);
